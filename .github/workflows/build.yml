@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: swiftc --version
+
+      - name: Build
+        run: ./build.sh
+
+      - name: Sanity check binary
+        run: file bin/focusfx && test -x bin/focusfx
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: focusfx
+          path: bin/focusfx
+          if-no-files-found: error

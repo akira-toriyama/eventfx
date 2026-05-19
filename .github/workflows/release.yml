@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.0.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build
+        run: ./build.sh
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          cp bin/focusfx dist/focusfx
+          ( cd dist && shasum -a 256 focusfx > focusfx.sha256 )
+
+      - name: Generate release notes (git-cliff)
+        run: |
+          brew install git-cliff
+          git-cliff --tag "${{ inputs.tag }}" --unreleased --strip all \
+            > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+
+      - name: Create tag
+        run: |
+          git tag "${{ inputs.tag }}"
+          git push origin "${{ inputs.tag }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.tag }}" \
+            --title "${{ inputs.tag }}" \
+            --notes-file RELEASE_NOTES.md \
+            dist/focusfx dist/focusfx.sha256
