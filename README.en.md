@@ -33,7 +33,7 @@ flowchart TD
 
 ## Requirements
 
-- macOS 14+
+- macOS (recent versions; uses `NSWorkspace` / AX — minimum not formally verified)
 - Xcode Command Line Tools (`swiftc`)
 - Accessibility permission (prompted on first run)
 

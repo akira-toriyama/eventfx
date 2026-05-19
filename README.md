@@ -27,7 +27,7 @@ flowchart TD
 
 ## 要件
 
-- macOS 14 以降
+- macOS（近年のバージョン。`NSWorkspace` / AX を使用。最小バージョンは未検証）
 - Xcode Command Line Tools（`swiftc`）
 - アクセシビリティ権限（初回プロンプト。後述）
 

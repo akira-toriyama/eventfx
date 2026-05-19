@@ -1,2 +1,10 @@
 # ビルド成果物（install.sh が build.sh 経由で生成）
 /bin/
+
+# release.yml が生成する一時物
+/dist/
+/RAW_NOTES.md
+/RELEASE_NOTES.md
+
+# macOS
+.DS_Store

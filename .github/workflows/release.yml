@@ -30,12 +30,16 @@ jobs:
       - name: Generate release notes (git-cliff)
         run: |
           brew install git-cliff
-          git-cliff --tag "${{ inputs.tag }}" --unreleased --strip all \
-            > RELEASE_NOTES.md
+          # --strip の値はバージョン差があるため使わず、cliff.toml の
+          # ヘッダ "# Changelog" を後処理で除去（版に依存しない堅牢化）。
+          git-cliff --tag "${{ inputs.tag }}" --unreleased -o RAW_NOTES.md
+          sed '/^# Changelog$/d' RAW_NOTES.md | sed '/./,$!d' > RELEASE_NOTES.md
           cat RELEASE_NOTES.md
 
       - name: Create tag
         run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag "${{ inputs.tag }}"
           git push origin "${{ inputs.tag }}"
 
