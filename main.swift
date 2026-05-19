@@ -70,10 +70,7 @@ let exampleConfig = """
 # 効果音
 afplay "${XDG_DATA_HOME:-$HOME/.local/share}/sounds/window_focused.wav"
 
-# アクティブウィンドウを振動させる（実装予定: focusfx vibrate サブコマンド）
-# focusfx vibrate "$FOCUSFX_WINDOW_ID"
-
-# ボーダーを1秒だけ太くする（JankyBorders 併用時の例）
+# 枠を一瞬強調する（JankyBorders 併用時の例）
 # borders width=10 ; sleep 1 ; borders width=6
 """
 
