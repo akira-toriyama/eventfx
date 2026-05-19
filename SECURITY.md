@@ -16,7 +16,7 @@ focusfx has the following significant privileges. Users should understand them:
   に書かれた内容は、フォーカス変更のたびにシェルで実行される。
   Each config line is executed via `/bin/sh -c`. Anything written to the config
   file runs in a shell on every focus change.
-- 非公開 API `_AXUIElementGetWindow` を使用（yabai 等が長年使う安定 API）。
+- 非公開 API `_AXUIElementGetWindow` を使用（長年実績のある安定 API）。
   Uses the private API `_AXUIElementGetWindow`.
 
 したがって **config ファイルは信頼できる内容のみ**にしてください。書き込み権限を持つ第三者は任意コード実行が可能になります。

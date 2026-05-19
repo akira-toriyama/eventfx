@@ -1,13 +1,10 @@
 // focusfx
 //
 // アクティブ（フォーカス）ウィンドウが変わったら、設定された任意コマンドを
-// 実行する macOS 常駐デーモン。yabai の
-//   yabai -m signal --add event=window_focused action="..."
-// を、rift / yabai 非依存・純粋な受動オブザーバとして再現したもの。
-// 効果音・窓振動・枠強調 等は「設定（コマンド文字列）」側の責務で、
-// このバイナリは検知とディスパッチしか知らない（ゼロハードコード）。
+// 実行する macOS 常駐デーモン。効果音・枠強調 等は「設定（コマンド文字列）」
+// 側の責務で、このバイナリは検知とディスパッチしか知らない（ゼロハードコード）。
 //
-// 検知: ポーリングしない（yabai と同じ AX イベント駆動）。
+// 検知: ポーリングしない（AX イベント駆動）。
 //   - NSWorkspace.didActivateApplication で最前面アプリ切替を受け、
 //   - 最前面アプリの AXUIElement に kAXFocusedWindowChanged /
 //     kAXMainWindowChanged の AX オブザーバを張替え（最前面1つだけ＝軽量）。
@@ -26,7 +23,7 @@
 import Cocoa
 import ApplicationServices
 
-// AXUIElement から CGWindowID を取る非公開関数。yabai 等が長年使う安定 API。
+// AXUIElement から CGWindowID を取る非公開関数（長年実績のある安定 API）。
 @_silgen_name("_AXUIElementGetWindow")
 func _AXUIElementGetWindow(_ element: AXUIElement,
                            _ identifier: UnsafeMutablePointer<CGWindowID>) -> AXError

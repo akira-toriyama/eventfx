@@ -3,8 +3,8 @@
 English | [日本語](README.md)
 
 A macOS resident daemon that runs an arbitrary configured command whenever the
-active (focused) window changes. It reproduces yabai's `window_focused` signal
-as a pure passive observer that is **independent of yabai / rift**. Effects
+active (focused) window changes. It is a pure passive observer and does not
+depend on any external window manager. Effects
 (sound, border emphasis, …) are the responsibility of the configuration
 (command strings); the binary only knows **detection and dispatch — zero
 hardcoding**.
@@ -12,7 +12,6 @@ hardcoding**.
 ## Highlights
 
 - **No polling.** Driven by `NSWorkspace.didActivateApplication` + AX events
-  (same approach as yabai)
 - Re-binds an AX observer to only the single frontmost app → lightweight
 - Hot-reloads config (save → applied on next event, no restart)
 - No external dependencies (plain `swiftc`)
