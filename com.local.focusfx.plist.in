@@ -13,6 +13,16 @@
         <string>@@BIN@@</string>
     </array>
 
+    <!-- launchd 既定 PATH は /usr/bin:/bin:... のみで Homebrew が無い。
+         config が dispatch する効果（borders 等）が command-not-found で
+         無音失敗するのを根本回避。@@HOME@@ は install.sh が実機の絶対値へ
+         置換（Apple Silicon /opt/homebrew・Intel /usr/local 両対応）。 -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>@@HOME@@/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
     <key>RunAtLoad</key>
     <true/>
 
