@@ -31,7 +31,6 @@
 
 ## 開発
 
-- コミット規約: `docs/commit-convention.md`（gitmoji + Conventional Commits）。
-  `git config core.hooksPath scripts/hooks` でフック有効化。
-- CI: `.github/workflows/`（build / shellcheck / commit-lint / release）。
-- リリースノートは git-cliff（`cliff.toml`）で生成。
+- 推奨コミット規約: gitmoji + Conventional Commits（強制はしない）。
+- CI: `.github/workflows/`（build / shellcheck / release）。
+- リリースノートは release ワークフローが git-cliff（`cliff.toml`）で生成。

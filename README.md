@@ -2,6 +2,10 @@
 
 [English](README.en.md) | 日本語
 
+![Platform](https://img.shields.io/badge/platform-macOS-blue)
+![Swift](https://img.shields.io/badge/Swift-orange?logo=swift&logoColor=white)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 アクティブ（フォーカス）ウィンドウが変わったら、設定された任意コマンドを実行する macOS 常駐デーモン。純粋な受動オブザーバで、外部のウィンドウマネージャに依存しない。効果音・枠強調などの「効果」は設定（コマンド文字列）側の責務で、本体は **検知とディスパッチしか持たない（ゼロハードコード）**。
 
 ## 特徴
@@ -83,8 +87,8 @@ rm ~/Library/LaunchAgents/com.local.focusfx.plist ~/.local/bin/focusfx
 ## 開発
 
 - 本体は単一ファイル `main.swift`。`./build.sh` で `bin/focusfx` を生成（git 管理外）
-- コミット規約: [docs/commit-convention.md](docs/commit-convention.md)（gitmoji + Conventional Commits）
-- フック有効化: `git config core.hooksPath scripts/hooks`
+- 推奨コミット規約: gitmoji + Conventional Commits（強制はしない）
+- リリースノートは `cliff.toml` に従い release ワークフローが自動生成
 
 ## ライセンス
 

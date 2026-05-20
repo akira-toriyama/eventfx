@@ -18,5 +18,4 @@ jobs:
         run: |
           shellcheck --shell=sh \
             build.sh \
-            install.sh \
-            scripts/hooks/commit-msg
+            install.sh
