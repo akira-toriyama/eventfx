@@ -27,13 +27,38 @@ jobs:
           cp bin/focusfx dist/focusfx
           ( cd dist && shasum -a 256 focusfx > focusfx.sha256 )
 
-      - name: Generate release notes (git-cliff)
+      - name: Generate release notes (git-cliff + Install section)
         run: |
           brew install git-cliff
           # --strip の値はバージョン差があるため使わず、cliff.toml の
           # ヘッダ "# Changelog" を後処理で除去（版に依存しない堅牢化）。
           git-cliff --tag "${{ inputs.tag }}" --unreleased -o RAW_NOTES.md
           sed '/^# Changelog$/d' RAW_NOTES.md | sed '/./,$!d' > RELEASE_NOTES.md
+
+          # ws-tabs と同形式の Install セクションを末尾に付与。
+          cat >> RELEASE_NOTES.md <<'EOF'
+
+          ## Install
+
+          **Homebrew:**
+
+          ```sh
+          brew install akira-toriyama/tap/focusfx
+          brew services start focusfx
+          ```
+
+          **Prebuilt (`focusfx` below):** ad-hoc signed (not notarized).
+          macOS quarantines downloads, so on first use:
+
+          ```sh
+          xattr -d com.apple.quarantine ./focusfx
+          chmod +x ./focusfx
+          ./focusfx
+          ```
+
+          Grant **Accessibility** to *focusfx* on first run (System Settings →
+          Privacy & Security → Accessibility).
+          EOF
           cat RELEASE_NOTES.md
 
       - name: Create tag
