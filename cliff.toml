@@ -16,10 +16,9 @@ footer = ""
 conventional_commits = true
 filter_unconventional = true
 split_commits = false
-# gitmoji（絵文字 / :shortcode:）を先頭から除去してから解析
+# gitmoji（:shortcode:）を先頭から除去してから解析（TOML 単一引用符は無escape）。
 commit_preprocessors = [
-  { pattern = '^\\p{Emoji_Presentation}\\s*', replace = "" },
-  { pattern = '^:\\w+:\\s*', replace = "" },
+  { pattern = '^:\w+:\s*', replace = "" },
 ]
 commit_parsers = [
   { message = "^feat", group = "Features" },
