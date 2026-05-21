@@ -1,4 +1,4 @@
-name: Build
+name: build
 
 on:
   push:
@@ -7,14 +7,14 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
       - name: Show toolchain
         run: swiftc --version
 
-      - name: Build
+      - name: Build (release)
         run: ./build.sh
 
       - name: Sanity check binary
