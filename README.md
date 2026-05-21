@@ -38,7 +38,7 @@ flowchart TD
 ## インストール
 
 ```sh
-git clone <this-repo> ~/dev/focusfx
+git clone https://github.com/akira-toriyama/focusfx.git ~/dev/focusfx
 cd ~/dev/focusfx
 ./install.sh
 ```
