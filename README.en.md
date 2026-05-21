@@ -2,7 +2,7 @@
 
 English | [日本語](README.md)
 
-![Platform](https://img.shields.io/badge/platform-macOS-blue)
+![Platform](https://img.shields.io/badge/platform-macOS%2013%2B-blue)
 ![Swift](https://img.shields.io/badge/Swift-orange?logo=swift&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -36,8 +36,8 @@ flowchart TD
 
 ## Requirements
 
-- macOS (recent versions; uses `NSWorkspace` / AX — minimum not formally verified)
-- Xcode Command Line Tools (`swiftc`)
+- macOS 13+ (Ventura). Matches the Homebrew formula's `depends_on macos: :ventura`
+- Xcode Command Line Tools (`swiftc`). Uses `NSWorkspace` and the AX API
 - Accessibility permission (prompted on first run)
 
 ## Install

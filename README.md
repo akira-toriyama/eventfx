@@ -2,7 +2,7 @@
 
 [English](README.en.md) | 日本語
 
-![Platform](https://img.shields.io/badge/platform-macOS-blue)
+![Platform](https://img.shields.io/badge/platform-macOS%2013%2B-blue)
 ![Swift](https://img.shields.io/badge/Swift-orange?logo=swift&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -31,8 +31,8 @@ flowchart TD
 
 ## 要件
 
-- macOS（近年のバージョン。`NSWorkspace` / AX を使用。最小バージョンは未検証）
-- Xcode Command Line Tools（`swiftc`）
+- macOS 13 以降（Ventura+。Homebrew formula の `depends_on macos: :ventura` と一致）
+- Xcode Command Line Tools（`swiftc`）。`NSWorkspace` と AX API を使用
 - アクセシビリティ権限（初回プロンプト。後述）
 
 ## インストール
