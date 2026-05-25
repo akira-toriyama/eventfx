@@ -6,13 +6,13 @@
 
 ## セキュリティ上の前提 / Security model
 
-focusfx は次の強い権限・能力を持ちます。利用者はこれを理解した上で使用してください。
+eventfx は次の強い権限・能力を持ちます。利用者はこれを理解した上で使用してください。
 
-focusfx has the following significant privileges. Users should understand them:
+eventfx has the following significant privileges. Users should understand them:
 
 - **アクセシビリティ権限** が必要（フォーカス窓の解決に AX API を使用）。
   Requires Accessibility permission (uses the AX API to resolve the focused window).
-- **設定ファイルの各行を `/bin/sh -c` で実行する**。`${XDG_CONFIG_HOME:-$HOME/.config}/focusfx/config`
+- **設定ファイルの各行を `/bin/sh -c` で実行する**。`${XDG_CONFIG_HOME:-$HOME/.config}/eventfx/config`
   に書かれた内容は、フォーカス変更のたびにシェルで実行される。
   Each config line is executed via `/bin/sh -c`. Anything written to the config
   file runs in a shell on every focus change.

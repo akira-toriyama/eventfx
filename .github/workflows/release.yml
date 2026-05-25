@@ -2,7 +2,7 @@ name: Release
 
 # Rolling-draft model (mirrors ws-tabs). A push to main makes git-cliff
 # compute the next version from Conventional Commits and create/update a
-# single DRAFT GitHub Release with the built `focusfx` binary attached.
+# single DRAFT GitHub Release with the built `eventfx` binary attached.
 # No tag is created here — GitHub generates the tag on the target commit
 # when you manually Publish in the UI. Merging more to main → the next-release
 # draft grows; versions don't multiply while unpublished.
@@ -68,20 +68,20 @@ jobs:
           **Homebrew:**
 
           ```sh
-          brew install akira-toriyama/tap/focusfx
-          brew services start focusfx
+          brew install akira-toriyama/tap/eventfx
+          brew services start eventfx
           ```
 
-          **Prebuilt (`focusfx` below):** ad-hoc signed (not notarized).
+          **Prebuilt (`eventfx` below):** ad-hoc signed (not notarized).
           macOS quarantines downloads, so on first use:
 
           ```sh
-          xattr -d com.apple.quarantine ./focusfx
-          chmod +x ./focusfx
-          ./focusfx
+          xattr -d com.apple.quarantine ./eventfx
+          chmod +x ./eventfx
+          ./eventfx
           ```
 
-          Grant **Accessibility** to *focusfx* on first run (System Settings →
+          Grant **Accessibility** to *eventfx* on first run (System Settings →
           Privacy & Security → Accessibility).
           EOF
 
@@ -91,8 +91,8 @@ jobs:
           set -euo pipefail
           ./build.sh
           mkdir -p artifacts
-          cp bin/focusfx artifacts/focusfx
-          ( cd artifacts && shasum -a 256 focusfx > focusfx.sha256 )
+          cp bin/eventfx artifacts/eventfx
+          ( cd artifacts && shasum -a 256 eventfx > eventfx.sha256 )
 
       - name: Upload preview (dry run)
         if: steps.ver.outputs.release == 'true' && github.event.inputs.dry_run == 'true'
@@ -100,8 +100,8 @@ jobs:
         with:
           name: release-preview-${{ steps.ver.outputs.version }}
           path: |
-            artifacts/focusfx
-            artifacts/focusfx.sha256
+            artifacts/eventfx
+            artifacts/eventfx.sha256
             RELEASE_NOTES.md
 
       - name: Dry-run summary
@@ -125,7 +125,7 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          assets="artifacts/focusfx artifacts/focusfx.sha256"
+          assets="artifacts/eventfx artifacts/eventfx.sha256"
 
           gh release list --limit 100 --json tagName,isDraft \
             --jq '.[] | select(.isDraft==true and (.tagName|test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))) | .tagName' \

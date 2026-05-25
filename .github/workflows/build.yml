@@ -18,11 +18,11 @@ jobs:
         run: ./build.sh
 
       - name: Sanity check binary
-        run: file bin/focusfx && test -x bin/focusfx
+        run: file bin/eventfx && test -x bin/eventfx
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: focusfx
-          path: bin/focusfx
+          name: eventfx
+          path: bin/eventfx
           if-no-files-found: error

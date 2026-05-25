@@ -11,10 +11,10 @@
 ## 構成
 
 - `main.swift` — 本体（単一ファイル）。Cocoa + ApplicationServices。
-- `build.sh` — `swiftc -O` で `bin/focusfx` を生成。追加依存なし。
-- `install.sh` — build → `~/.local/bin/focusfx` 配置 → plist 生成 → launchd 登録。
+- `build.sh` — `swiftc -O` で `bin/eventfx` を生成。追加依存なし。
+- `install.sh` — build → `~/.local/bin/eventfx` 配置 → plist 生成 → launchd 登録。
   自分の位置と `$HOME` を実行時に自己発見（ユーザー名非依存）。
-- `com.local.focusfx.plist.in` — LaunchAgent テンプレ。`@@BIN@@`/`@@HOME@@` を
+- `com.local.eventfx.plist.in` — LaunchAgent テンプレ。`@@BIN@@`/`@@HOME@@` を
   install.sh が置換。`EnvironmentVariables/PATH` で Homebrew/`~/.local/bin` を通す
   （launchd 既定 PATH に無く、config が呼ぶコマンドが無音失敗する根本対策）。
 - `bin/` — ビルド成果物。**git 管理外**（`.gitignore`）。
@@ -24,7 +24,7 @@
 - macOS 14+ 専用。非公開 API `_AXUIElementGetWindow` を使用（安定実績あり）。
 - ポーリング禁止（AX イベント駆動）。最前面アプリ 1 つにのみオブザーバを張る。
 - config は mtime ホットリロード（タイマー禁止）。各コマンドは 10s で打ち切り。
-- **スコープ確定（再提案しないこと）**: `focusfx vibrate`（ウィンドウ振動）と
+- **スコープ確定（再提案しないこと）**: `eventfx vibrate`（ウィンドウ振動）と
   内側ボーダー（inset border）は **検討の上、取りやめ**。前者はタイル型 WM と
   原理的に不整合、後者は外部ツールで不可かつ自作も見送り。geometric 追加演出は
   しない方針。効果は afplay / borders 等を config から呼ぶ形で完結。

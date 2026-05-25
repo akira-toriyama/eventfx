@@ -1,5 +1,5 @@
 #!/bin/sh
-# focusfx をビルドし、LaunchAgent として登録する。
+# eventfx をビルドし、LaunchAgent として登録する。
 #
 # どのマシン・どのユーザー名でも、このスクリプトは自分の位置から
 # 正しい絶対パスを「自己発見」する（テンプレートエンジン・chezmoi 不要）。
@@ -9,21 +9,21 @@
 set -e
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-BIN="$HOME/.local/bin/focusfx"
-PLIST="$HOME/Library/LaunchAgents/com.local.focusfx.plist"
-LABEL="com.local.focusfx"
+BIN="$HOME/.local/bin/eventfx"
+PLIST="$HOME/Library/LaunchAgents/com.local.eventfx.plist"
+LABEL="com.local.eventfx"
 
-# 1. ビルド（bin/focusfx を生成）
+# 1. ビルド（bin/eventfx を生成）
 "$DIR/build.sh"
 
-# 2. 安定 PATH 位置へバイナリ配置（config からは "$HOME/.local/bin/focusfx" で呼べる）
+# 2. 安定 PATH 位置へバイナリ配置（config からは "$HOME/.local/bin/eventfx" で呼べる）
 mkdir -p "$HOME/.local/bin" "$HOME/.local/state"
-install -m 0755 "$DIR/bin/focusfx" "$BIN"
+install -m 0755 "$DIR/bin/eventfx" "$BIN"
 
 # 3. テンプレートから plist 生成（自己発見した絶対パスを埋める）
 mkdir -p "$HOME/Library/LaunchAgents"
 sed -e "s|@@BIN@@|$BIN|g" -e "s|@@HOME@@|$HOME|g" \
-    "$DIR/com.local.focusfx.plist.in" > "$PLIST"
+    "$DIR/com.local.eventfx.plist.in" > "$PLIST"
 
 # 4. LaunchAgent 再登録（既存ジョブは入れ替え）
 launchctl bootout  "gui/$(id -u)/$LABEL" 2>/dev/null || true

@@ -4,7 +4,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.local.focusfx</string>
+    <string>com.local.eventfx</string>
 
     <!-- @@BIN@@ / @@HOME@@ は install.sh が実行時に
          自己発見した絶対パスへ置換する（ユーザー名非依存）。 -->
@@ -33,9 +33,9 @@
     <string>Interactive</string>
 
     <key>StandardOutPath</key>
-    <string>@@HOME@@/.local/state/focusfx.out.log</string>
+    <string>@@HOME@@/.local/state/eventfx.out.log</string>
 
     <key>StandardErrorPath</key>
-    <string>@@HOME@@/.local/state/focusfx.err.log</string>
+    <string>@@HOME@@/.local/state/eventfx.err.log</string>
 </dict>
 </plist>

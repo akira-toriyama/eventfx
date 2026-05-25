@@ -25,7 +25,7 @@ This repo commits with **gitmoji + Conventional Commits**; from the messages
 ### Examples
 
 ```
-:sparkles: feat(config): inject window title as $FOCUSFX_TITLE
+:sparkles: feat(config): inject window title as $EVENTFX_TITLE
 :bug: fix(install): create bin/ before swiftc links
 :zap: perf: avoid redundant config reloads
 :boom: feat!: move binary to /opt/homebrew default location
@@ -55,7 +55,7 @@ Releases are automated by [.github/workflows/release.yml](../.github/workflows/r
 
 1. Merge `feat:`/`fix:`/`perf:` to `main`. git-cliff computes the next version
    and the workflow creates/updates a single **draft** GitHub Release with the
-   built `focusfx` binary attached. No tag yet.
+   built `eventfx` binary attached. No tag yet.
 2. Review the draft; **Publish** it in the GitHub UI — GitHub creates the tag
    (`vX.Y.Z`) on the target commit at publish time.
 3. Point Homebrew at the new tag (see

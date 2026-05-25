@@ -1,4 +1,4 @@
-// focusfx
+// eventfx
 //
 // アクティブ（フォーカス）ウィンドウが変わったら、設定された任意コマンドを
 // 実行する macOS 常駐デーモン。効果音・枠強調 等は「設定（コマンド文字列）」
@@ -10,12 +10,12 @@
 //     kAXMainWindowChanged の AX オブザーバを張替え（最前面1つだけ＝軽量）。
 //   - フォーカス窓の CGWindowID が直前と変われば window_focused を発火。
 //
-// 設定: ${XDG_CONFIG_HOME:-$HOME/.config}/focusfx/config
+// 設定: ${XDG_CONFIG_HOME:-$HOME/.config}/eventfx/config
 //   1行＝1コマンド（/bin/sh -c で実行）。空行と # 行は無視。保存で hot reload
 //   （次の発火時に mtime を見て遅延再読込＝タイマー無し）。
 //   各コマンドへ context を環境変数で注入:
-//     FOCUSFX_EVENT / FOCUSFX_WINDOW_ID / FOCUSFX_PID / FOCUSFX_APP /
-//     FOCUSFX_TITLE
+//     EVENTFX_EVENT / EVENTFX_WINDOW_ID / EVENTFX_PID / EVENTFX_APP /
+//     EVENTFX_TITLE
 //
 // 要 Accessibility 権限（初回プロンプト。LaunchAgent のバイナリを
 // システム設定 > プライバシーとセキュリティ > アクセシビリティ で許可）。
@@ -34,9 +34,9 @@ func envOr(_ key: String, _ fallback: String) -> String {
 }
 
 let home = NSHomeDirectory()
-let configDir = envOr("XDG_CONFIG_HOME", home + "/.config") + "/focusfx"
+let configDir = envOr("XDG_CONFIG_HOME", home + "/.config") + "/eventfx"
 let configPath = configDir + "/config"
-let logPath = home + "/.local/state/focusfx.log"
+let logPath = home + "/.local/state/eventfx.log"
 
 func log(_ msg: String) {
     let line = "\(ISO8601DateFormatter().string(from: Date())) \(msg)\n"
@@ -53,16 +53,16 @@ func log(_ msg: String) {
 }
 
 let exampleConfig = """
-# focusfx — アクティブ（フォーカス）ウィンドウが変わるたびに
+# eventfx — アクティブ（フォーカス）ウィンドウが変わるたびに
 # 以下のコマンドを /bin/sh -c で実行する。1行＝1コマンド。# はコメント。
 # 保存すれば自動反映（hot reload・デーモン再起動不要）。
 #
 # 利用できる環境変数:
-#   $FOCUSFX_EVENT      \"window_focused\"
-#   $FOCUSFX_WINDOW_ID  フォーカス窓の CGWindowID
-#   $FOCUSFX_PID        アプリの PID
-#   $FOCUSFX_APP        アプリ名
-#   $FOCUSFX_TITLE      ウィンドウタイトル
+#   $EVENTFX_EVENT      \"window_focused\"
+#   $EVENTFX_WINDOW_ID  フォーカス窓の CGWindowID
+#   $EVENTFX_PID        アプリの PID
+#   $EVENTFX_APP        アプリ名
+#   $EVENTFX_TITLE      ウィンドウタイトル
 
 # 効果音
 afplay "${XDG_DATA_HOME:-$HOME/.local/share}/sounds/window_focused.wav"
@@ -218,11 +218,11 @@ final class FocusWatcher {
         guard !config.commands.isEmpty else { return }
 
         var env = ProcessInfo.processInfo.environment
-        env["FOCUSFX_EVENT"] = "window_focused"
-        env["FOCUSFX_WINDOW_ID"] = String(windowID)
-        env["FOCUSFX_PID"] = String(pid)
-        env["FOCUSFX_APP"] = app
-        env["FOCUSFX_TITLE"] = title
+        env["EVENTFX_EVENT"] = "window_focused"
+        env["EVENTFX_WINDOW_ID"] = String(windowID)
+        env["EVENTFX_PID"] = String(pid)
+        env["EVENTFX_APP"] = app
+        env["EVENTFX_TITLE"] = title
 
         log("window_focused win=\(windowID) app=\(app) "
             + "-> \(config.commands.count) cmd(s)")
@@ -249,7 +249,7 @@ let trusted = AXIsProcessTrustedWithOptions(
     ["AXTrustedCheckOptionPrompt": true] as CFDictionary)
 if !trusted {
     log("accessibility NOT granted yet — grant in System Settings > "
-        + "Privacy & Security > Accessibility, then restart focusfx")
+        + "Privacy & Security > Accessibility, then restart eventfx")
 }
 
 let app = NSApplication.shared

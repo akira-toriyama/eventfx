@@ -7,7 +7,7 @@
 header = """
 # Changelog
 
-Release history of focusfx.\n
+Release history of eventfx.\n
 """
 body = """
 {% if version %}\
@@ -72,7 +72,7 @@ commit_parsers = [
 ]
 
 [bump]
-# Version when no tags exist yet. (focusfx 初回は既に v0.1.0 として公開済み。)
+# Version when no tags exist yet. (eventfx 初回は既に v0.1.0 として公開済み。)
 initial_tag = "v0.1.0"
 features_always_bump_minor = true
 breaking_always_bump_major = true
