@@ -6,16 +6,16 @@
 
 **English** · [日本語](README.ja.md)
 
-A macOS resident daemon that runs an arbitrary configured command whenever the
-active (focused) window changes. It is a pure passive observer and does not
-depend on any external window manager. Effects
-(sound, border emphasis, …) are the responsibility of the configuration
-(command strings); the binary only knows **detection and dispatch — zero
-hardcoding**.
+A macOS resident daemon that runs configured commands on AX-driven events —
+**focused-window changes** and **text-selection changes**. Pure passive observer,
+no external window manager required. Effects (sound, border emphasis, launcher
+popup, …) are the responsibility of the configuration (command strings); the
+binary only knows **detection and dispatch — zero hardcoding**.
 
 ## Highlights
 
 - **No polling.** Driven by `NSWorkspace.didActivateApplication` + AX events
+- Two event types: `window_focused`, `text_selected` — dispatch via `$EVENTFX_EVENT`
 - Re-binds an AX observer to only the single frontmost app → lightweight
 - Hot-reloads config (save → applied on next event, no restart)
 - No external dependencies (plain `swiftc`)
@@ -25,12 +25,13 @@ hardcoding**.
 ```mermaid
 flowchart TD
     A[NSWorkspace.didActivateApplication] --> B[Re-bind AX observer to frontmost app]
-    B --> C{kAXFocusedWindowChanged /<br/>kAXMainWindowChanged}
-    C --> D[Get focused window CGWindowID]
-    D --> E{Changed?}
-    E -- no --> C
-    E -- yes --> F[50ms debounce]
+    B --> C{AX notification}
+    C -- kAXFocusedWindowChanged<br/>kAXMainWindowChanged --> D[Focused CGWindowID changed?]
+    C -- kAXSelectedTextChanged --> S[Read selected text<br/>non-empty &amp; changed?]
+    D -- yes --> F[50ms debounce]
+    S -- yes --> T[180ms debounce]
     F --> G[Lazy-reload config by mtime]
+    T --> G
     G --> H[Run each line via /bin/sh -c<br/>inject EVENTFX_* env]
 ```
 
@@ -65,15 +66,28 @@ Security > Accessibility.
 
 - **One line = one command** (run via `/bin/sh -c`). Blank and `#` lines ignored
 - Save → applied on next event (mtime hot-reload, no timer)
+- Branch on `$EVENTFX_EVENT` to handle different event kinds
 - Context injected as environment variables:
 
-| Variable | Meaning |
-|---|---|
-| `EVENTFX_EVENT` | `"window_focused"` |
-| `EVENTFX_WINDOW_ID` | focused window CGWindowID |
-| `EVENTFX_PID` | app PID |
-| `EVENTFX_APP` | app name |
-| `EVENTFX_TITLE` | window title |
+| Variable | Event | Meaning |
+|---|---|---|
+| `EVENTFX_EVENT` | both | `"window_focused"` or `"text_selected"` |
+| `EVENTFX_PID` | both | app PID |
+| `EVENTFX_APP` | both | app name |
+| `EVENTFX_WINDOW_ID` | `window_focused` | focused window CGWindowID |
+| `EVENTFX_TITLE` | `window_focused` | window title |
+| `EVENTFX_SELECTION` | `text_selected` | selected text |
+| `EVENTFX_CURSOR_X` / `EVENTFX_CURSOR_Y` | `text_selected` | mouse coords at fire time (Cocoa system, all screens) |
+
+Example — popup launcher near cursor on text selection (via `wand` / `stroke`):
+
+```sh
+[ "$EVENTFX_EVENT" = text_selected ] && \
+  stroke --show-menu \
+    --items "$HOME/.config/eventfx/text_selected.toml" \
+    --at "$EVENTFX_CURSOR_X" "$EVENTFX_CURSOR_Y" \
+    --selection "$EVENTFX_SELECTION"
+```
 
 A sample is generated when the config is missing. Each command is killed after
 10 seconds as a runaway guard.
