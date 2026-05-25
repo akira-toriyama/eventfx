@@ -4,9 +4,14 @@
 
 ## 何のソフトか
 
-アクティブウィンドウ変更を検知し、設定された任意コマンドを実行する macOS 常駐
-デーモン。外部 WM 非依存の受動オブザーバ。**検知とディスパッチのみ**を担い、
-効果（音・枠など）は config 側の責務（ゼロハードコード）。
+AX 由来のイベント（フォーカス窓変化・テキスト選択変化）を検知し、設定された
+任意コマンドを実行する macOS 常駐デーモン。外部 WM 非依存の受動オブザーバ。
+**検知とディスパッチのみ**を担い、効果（音・枠・ランチャー等）は config 側の
+責務（ゼロハードコード）。`$EVENTFX_EVENT` で種別を分岐:
+
+- `window_focused`: 追加 env = `EVENTFX_WINDOW_ID`, `EVENTFX_TITLE`
+- `text_selected`: 追加 env = `EVENTFX_SELECTION`, `EVENTFX_CURSOR_X/Y`
+  （マウス座標は Cocoa 系。wand `stroke --show-menu --at` と整合）
 
 ## 構成
 

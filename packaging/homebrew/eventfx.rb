@@ -2,7 +2,7 @@
 # at akira-toriyama/homebrew-tap as Formula/eventfx.rb. Keep this in sync and
 # bump `url`/`sha256` on every release tag (see packaging/homebrew/README.md).
 class Eventfx < Formula
-  desc "macOS daemon that runs commands on active window change"
+  desc "macOS daemon that runs commands on AX events (window focus, text selection)"
   homepage "https://github.com/akira-toriyama/eventfx"
   # Reference copy. The REAL sha256 lives only in the tap's Formula/eventfx.rb
   # (a sha cannot self-reference the tarball that contains it). Per-release
@@ -36,18 +36,20 @@ class Eventfx < Formula
 
   def caveats
     <<~EOS
-      eventfx is a background daemon. It watches the active (focused) window
-      and dispatches commands from your config file:
+      eventfx is a background daemon. It observes AX events on the frontmost
+      app — focused-window changes (window_focused) and text-selection changes
+      (text_selected) — and dispatches commands from your config file:
         ${XDG_CONFIG_HOME:-$HOME/.config}/eventfx/config
-      (a sample is auto-generated on first run if the file is missing).
+      (a sample is auto-generated on first run if the file is missing). Branch
+      with $EVENTFX_EVENT inside your commands.
 
       Start (also auto-runs at login afterward):
         brew services start eventfx
 
       Grant Accessibility to "eventfx" on first run (System Settings →
       Privacy & Security → Accessibility). Without it, the daemon can still
-      detect application switches but cannot resolve the focused window
-      inside an app.
+      detect application switches but cannot read the focused window or
+      selected text inside an app — no events will be dispatched.
 
       Stop:
         brew services stop eventfx
