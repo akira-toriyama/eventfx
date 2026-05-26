@@ -94,6 +94,7 @@ macOS の TCC は binary の **codesign identifier** で許可を識別する。
 eventfx                 run as daemon (default)
 eventfx --debug         run + stderr + /tmp/eventfx.log
 eventfx --validate      parse config, print count, exit
+eventfx --doctor        self-check (AX / config / log / daemon), exit
 eventfx --version       print version, exit
 eventfx --help          print help, exit
 ```

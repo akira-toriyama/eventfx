@@ -75,7 +75,8 @@ Accessibility.
 ```
 eventfx                run as daemon (default)
 eventfx --debug        run + log to stderr and /tmp/eventfx.log
-eventfx --validate     parse config, report status, exit
+eventfx --validate     parse config, report count, exit
+eventfx --doctor       self-check (AX / config / log / daemon), exit
 eventfx --version      print version, exit
 eventfx --help         print help, exit
 ```
