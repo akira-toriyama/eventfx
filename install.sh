@@ -31,5 +31,16 @@ launchctl bootstrap "gui/$(id -u)" "$PLIST"
 
 echo "installed: $BIN"
 echo "loaded:    $PLIST"
-echo "note: Accessibility 権限を システム設定 > プライバシーとセキュリティ"
-echo "      > アクセシビリティ で $BIN に付与してください（初回のみ）。"
+
+# 5. セルフチェック + AX 未許可なら System Settings の Accessibility ペインを
+#    自動で開いてやる。"あとは GUI に従って toggle ON するだけ" の動線に
+#    寄せる (家風 chord は文章で促すだけだが、ここはもう一歩踏み込む)。
+echo
+"$BIN" --doctor || true
+if ! "$BIN" --doctor 2>/dev/null | grep -q "^✓ Accessibility"; then
+    echo
+    echo "→ AX 未許可: System Settings → Privacy & Security → Accessibility を開きます。"
+    echo "  $BIN を + で追加して toggle ON してください (初回のみ)。"
+    open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility" \
+        2>/dev/null || true
+fi

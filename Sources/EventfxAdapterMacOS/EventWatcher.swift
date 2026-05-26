@@ -30,7 +30,9 @@ public final class EventWatcher {
     private var lastWindowID: CGWindowID = 0
     private var debounce: DispatchWorkItem?
     private var selectionDebounce: DispatchWorkItem?
-    private var lastSelection: String = ""
+    // c-callback (leftMouseDown) からもクリアするので nonisolated(unsafe)。
+    // 同じ run loop serial アクセスを前提に置く。
+    nonisolated(unsafe) private var lastSelection: String = ""
 
     // CGEventTap state — c-callback から直接書く。main run loop 上でのみ
     // 動くので実害ある race は発生しない (nonisolated(unsafe) はその表明)。
@@ -39,16 +41,17 @@ public final class EventWatcher {
     nonisolated(unsafe) private var mouseDragInProgress = false
     nonisolated(unsafe) private var dragMoved = false
     nonisolated(unsafe) private var lastDragMouseUpAt: Date?
-    nonisolated(unsafe) private var lastMouseMovedAt: Date?
+    nonisolated(unsafe) private var dragEndLocation: CGPoint?
 
     /// 直近の "drag-confirmed mouseUp" がこの窓内なら text_selected を
     /// マウス由来とみなす。AX 通知の 250ms debounce + 余裕で 0.5s。
     private static let mouseUpWindow: TimeInterval = 0.5
 
-    /// fire 時点で「マウスが直近この時間ぶん静止している」ことを要求する。
-    /// 選択完了後にユーザがすぐ別の場所へ移動した場合の発火を避けるための
-    /// 追加ゲート。jitter (リリース時の微小な動き) を許容するため軽め。
-    private static let stillnessThreshold: TimeInterval = 0.15
+    /// fire 時点で「マウスが drag 終了位置からこの距離以上離れていない」
+    /// ことを要求する。選択完了後にユーザがすぐ別の場所へ移動した場合の
+    /// 発火を避ける追加ゲート。位置ベースなので jitter にも強い (微小な
+    /// 動きでは引っかからない)。pixel 単位 (Cocoa points)。
+    private static let maxDistanceFromDragEnd: CGFloat = 40
 
     public init(config: Config) {
         self.config = config
@@ -200,15 +203,19 @@ public final class EventWatcher {
             return
         }
 
-        // PopClip 流ゲート 2: マウスが直近 stillnessThreshold ぶん動いていない
-        // こと。選択完了 → すぐ別の場所へ移動した場合の発火を避ける
-        // (= 「もう次の操作に移った」と判断する)。
-        if let lastMove = lastMouseMovedAt {
-            let stillness = Date().timeIntervalSince(lastMove)
-            if stillness < EventWatcher.stillnessThreshold {
+        // PopClip 流ゲート 2: drag 終了位置から現在カーソルが大きく離れて
+        // いないこと。選択完了 → すぐ別の場所へ移動した場合の発火を避ける。
+        // 位置差分なので jitter (微小な手の震え) は許容、actual な移動だけ
+        // 弾ける。
+        if let dragEnd = dragEndLocation {
+            let now = NSEvent.mouseLocation
+            let dx = now.x - dragEnd.x
+            let dy = now.y - dragEnd.y
+            let distance = (dx * dx + dy * dy).squareRoot()
+            if distance > EventWatcher.maxDistanceFromDragEnd {
                 if Logger.shared.debugMode {
-                    Logger.shared.log("selection skipped: mouse still moving "
-                        + "(stillness=\(String(format: "%.2fs", stillness)))")
+                    Logger.shared.log("selection skipped: cursor moved "
+                        + "\(Int(distance))px from drag-end")
                 }
                 return
             }
@@ -322,9 +329,6 @@ public final class EventWatcher {
               (1 << CGEventType.leftMouseDown.rawValue)
             | (1 << CGEventType.leftMouseDragged.rawValue)
             | (1 << CGEventType.leftMouseUp.rawValue)
-            // mouseMoved は no-button-pressed の単純移動。
-            // 高頻度に来るので callback は flag set だけで返す。
-            | (1 << CGEventType.mouseMoved.rawValue)
 
         let me = Unmanaged.passUnretained(self).toOpaque()
         guard let tap = CGEvent.tapCreate(
@@ -343,7 +347,7 @@ public final class EventWatcher {
         eventTapSource = src
         CFRunLoopAddSource(CFRunLoopGetCurrent(), src, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
-        Logger.shared.log("event-tap: installed (left mouse down/drag/up + mouseMoved)")
+        Logger.shared.log("event-tap: installed (left mouse down/drag/up)")
     }
 
     /// CGEventTap callback. `@convention(c)` 必須なので static + nonisolated。
@@ -360,21 +364,28 @@ public final class EventWatcher {
         case .leftMouseDown:
             me.mouseDragInProgress = true
             me.dragMoved = false
+            // 新しい drag = 新しいユーザ意図。同一 text の再選択でも
+            // 発火させたいので lastSelection をリセットする。
+            // 単純クリックや keyboard 選択は下流の drag-confirmed mouseUp
+            // ゲートで弾かれるので、ここでリセットしても誤発火しない。
+            me.lastSelection = ""
         case .leftMouseDragged:
             if me.mouseDragInProgress { me.dragMoved = true }
         case .leftMouseUp:
             if me.mouseDragInProgress && me.dragMoved {
                 me.lastDragMouseUpAt = Date()
+                me.dragEndLocation = NSEvent.mouseLocation
             }
             me.mouseDragInProgress = false
             me.dragMoved = false
-        case .mouseMoved:
-            me.lastMouseMovedAt = Date()
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
-            // OS が tap を一時無効化したら即 re-enable。`listenOnly` で
-            // 走るので timeout はほぼ起きないが念のため。
+            // OS が tap を一時無効化したら即 re-enable して状況をログに
+            // 残す ("2 回目以降出ない" 系の原因がここなら可視化される)。
             if let tap = me.eventTap {
                 CGEvent.tapEnable(tap: tap, enable: true)
+                Logger.shared.log("event-tap: re-enabled after "
+                    + (type == .tapDisabledByTimeout
+                       ? "timeout" : "user-input disable"))
             }
         default:
             break
