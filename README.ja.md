@@ -21,17 +21,17 @@ AX 由来のイベント (**フォーカス窓変化** / **テキスト選択変
 
 ```mermaid
 flowchart TD
-    A[NSWorkspace.didActivateApplication] --> B[最前面アプリへ AX オブザーバ張替え]
-    B --> C{AX 通知}
-    C -- kAXFocusedWindowChanged<br/>kAXMainWindowChanged --> D[フォーカス窓 CGWindowID 変化?]
-    C -- kAXSelectedTextChanged --> S[選択文字列を取得<br/>非空 &amp; 直前と変化?]
-    D -- はい --> F[50ms デバウンス]
-    S -- はい --> M{直近に左マウスドラッグ?<br/>(CGEventTap)}
-    M -- はい --> T[250ms デバウンス]
-    M -- いいえ --> X[skip<br/>キーボード / IME / プログラム的]
-    F --> G[config を mtime 比較で遅延リロード]
+    A["NSWorkspace.didActivateApplication"] --> B["最前面アプリへ AX オブザーバ張替え"]
+    B --> C{"AX 通知"}
+    C -- "kAXFocusedWindowChanged / kAXMainWindowChanged" --> D{"フォーカス窓 CGWindowID 変化?"}
+    C -- "kAXSelectedTextChanged" --> S{"選択文字列 非空 &amp; 直前と変化?"}
+    D -- はい --> F["50ms デバウンス"]
+    S -- はい --> M{"直近に左マウスドラッグ? (CGEventTap)"}
+    M -- はい --> T["250ms デバウンス"]
+    M -- いいえ --> X["skip (キーボード / IME / プログラム的)"]
+    F --> G["config を mtime 比較で遅延リロード"]
     T --> G
-    G --> H[各行を /bin/sh -c で実行<br/>EVENTFX_* を環境変数注入]
+    G --> H["各行を /bin/sh -c で実行、EVENTFX_* を環境変数注入"]
 ```
 
 ## 要件
