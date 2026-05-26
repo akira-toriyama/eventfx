@@ -26,17 +26,17 @@ hardcoding**.
 
 ```mermaid
 flowchart TD
-    A[NSWorkspace.didActivateApplication] --> B[Re-bind AX observer to frontmost app]
-    B --> C{AX notification}
-    C -- kAXFocusedWindowChanged<br/>kAXMainWindowChanged --> D[Focused CGWindowID changed?]
-    C -- kAXSelectedTextChanged --> S[Read selected text<br/>non-empty &amp; changed?]
-    D -- yes --> F[50ms debounce]
-    S -- yes --> M{Recent left-mouse drag?<br/>(CGEventTap)}
-    M -- yes --> T[250ms debounce]
-    M -- no --> X[skip<br/>keyboard / IME / programmatic]
-    F --> G[Lazy-reload config by mtime]
+    A["NSWorkspace.didActivateApplication"] --> B["Re-bind AX observer to frontmost app"]
+    B --> C{"AX notification"}
+    C -- "kAXFocusedWindowChanged / kAXMainWindowChanged" --> D{"Focused CGWindowID changed?"}
+    C -- "kAXSelectedTextChanged" --> S{"Selected text non-empty &amp; changed?"}
+    D -- yes --> F["50ms debounce"]
+    S -- yes --> M{"Recent left-mouse drag? (CGEventTap)"}
+    M -- yes --> T["250ms debounce"]
+    M -- no --> X["skip (keyboard / IME / programmatic)"]
+    F --> G["Lazy-reload config by mtime"]
     T --> G
-    G --> H[Run each line via /bin/sh -c<br/>inject EVENTFX_* env]
+    G --> H["Run each line via /bin/sh -c, inject EVENTFX_* env"]
 ```
 
 ## Requirements
