@@ -12,6 +12,7 @@ AX 由来のイベント (**フォーカス窓変化** / **テキスト選択変
 
 - **ポーリングしない**。`NSWorkspace.didActivateApplication` ＋ AX イベント駆動
 - 2 種類のイベント: `window_focused`, `text_selected`。`$EVENTFX_EVENT` で分岐
+- `text_selected` は **マウスドラッグ選択のときだけ発火** (キーボード / IME / プログラム的選択は除外)
 - 最前面アプリ 1 つにだけ AX オブザーバを張替え = 軽量
 - 設定はホットリロード (保存すれば次の発火時に自動反映・再起動不要)
 - 追加依存なし (純 `swiftc`)
@@ -25,7 +26,9 @@ flowchart TD
     C -- kAXFocusedWindowChanged<br/>kAXMainWindowChanged --> D[フォーカス窓 CGWindowID 変化?]
     C -- kAXSelectedTextChanged --> S[選択文字列を取得<br/>非空 &amp; 直前と変化?]
     D -- はい --> F[50ms デバウンス]
-    S -- はい --> T[180ms デバウンス]
+    S -- はい --> M{直近に左マウスドラッグ?<br/>(CGEventTap)}
+    M -- はい --> T[250ms デバウンス]
+    M -- いいえ --> X[skip<br/>キーボード / IME / プログラム的]
     F --> G[config を mtime 比較で遅延リロード]
     T --> G
     G --> H[各行を /bin/sh -c で実行<br/>EVENTFX_* を環境変数注入]
