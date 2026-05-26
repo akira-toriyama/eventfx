@@ -373,6 +373,15 @@ public final class EventWatcher {
         }
         let me = Unmanaged<EventWatcher>
             .fromOpaque(refcon).takeUnretainedValue()
+
+        // 診断ログ (--debug 時のみ): tap が何を受信しているか可視化。
+        // mouseDragged は高頻度なので除外、down/up/disable のみ。
+        if Logger.shared.debugMode && type != .leftMouseDragged {
+            Logger.shared.log("tap event: type=\(type.rawValue)"
+                + " (down=\(CGEventType.leftMouseDown.rawValue),"
+                + " up=\(CGEventType.leftMouseUp.rawValue))")
+        }
+
         switch type {
         case .leftMouseDown:
             me.mouseDragInProgress = true
