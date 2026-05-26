@@ -22,6 +22,9 @@ import EventfxCore
 /// (chord/perch と同じパターン)。
 @MainActor
 public final class EventWatcher {
+
+    // MARK: - State
+
     private let config: Config
     private var observer: AXObserver?
     private var appElement: AXUIElement?
@@ -53,6 +56,8 @@ public final class EventWatcher {
     /// 動きでは引っかからない)。pixel 単位 (Cocoa points)。
     private static let maxDistanceFromDragEnd: CGFloat = 40
 
+    // MARK: - Lifecycle
+
     public init(config: Config) {
         self.config = config
     }
@@ -71,6 +76,8 @@ public final class EventWatcher {
         setupMouseTap()
         Logger.shared.log("started; config=\(Paths.configPath)")
     }
+
+    // MARK: - AX observer (focused window + selected text)
 
     @objc private func activeAppChanged(_ note: Notification) {
         guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey]
@@ -153,6 +160,8 @@ public final class EventWatcher {
         return (wid, title)
     }
 
+    // MARK: - window_focused dispatch
+
     private func evaluate(fire: Bool) {
         let (wid, title) = focusedWindow()
         guard wid != 0, wid != lastWindowID else { return }
@@ -172,6 +181,8 @@ public final class EventWatcher {
         debounce = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: work)
     }
+
+    // MARK: - text_selected dispatch (with mouse-drag gates)
 
     fileprivate func handleSelectionChanged() {
         if Logger.shared.debugMode {
@@ -284,6 +295,8 @@ public final class EventWatcher {
             ],
             logDetail: "len=\(sel.count) at=(\(Int(p.x)),\(Int(p.y)))")
     }
+
+    // MARK: - Command dispatch (/bin/sh -c)
 
     private func dispatchCommands(event: String,
                                   extraEnv: [String: String],
