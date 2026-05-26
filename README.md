@@ -30,7 +30,7 @@ flowchart TD
     C -- kAXFocusedWindowChanged<br/>kAXMainWindowChanged --> D[Focused CGWindowID changed?]
     C -- kAXSelectedTextChanged --> S[Read selected text<br/>non-empty &amp; changed?]
     D -- yes --> F[50ms debounce]
-    S -- yes --> T[180ms debounce]
+    S -- yes --> T[250ms debounce]
     F --> G[Lazy-reload config by mtime]
     T --> G
     G --> H[Run each line via /bin/sh -c<br/>inject EVENTFX_* env]

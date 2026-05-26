@@ -144,11 +144,14 @@ public final class EventWatcher {
     }
 
     fileprivate func handleSelectionChanged() {
-        // ドラッグ中は 1 文字ずつ通知が来るので 180ms に集約。
+        // PopClip 体感に寄せた 250ms の "落ち着き" 待ち。AX 通知は 1 文字選択
+        // ごとに来るのでドラッグ中は常に再スケジュールされ、ユーザが手を止め
+        // た瞬間にだけ fire する形になる。CGEventTap で mouseUp を直接検出す
+        // ればもっと正確だが、それは別件 (event tap 導入は構造変更)。
         selectionDebounce?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.fireSelection() }
         selectionDebounce = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: work)
     }
 
     private func fireSelection() {

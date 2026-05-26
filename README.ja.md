@@ -25,7 +25,7 @@ flowchart TD
     C -- kAXFocusedWindowChanged<br/>kAXMainWindowChanged --> D[フォーカス窓 CGWindowID 変化?]
     C -- kAXSelectedTextChanged --> S[選択文字列を取得<br/>非空 &amp; 直前と変化?]
     D -- はい --> F[50ms デバウンス]
-    S -- はい --> T[180ms デバウンス]
+    S -- はい --> T[250ms デバウンス]
     F --> G[config を mtime 比較で遅延リロード]
     T --> G
     G --> H[各行を /bin/sh -c で実行<br/>EVENTFX_* を環境変数注入]

@@ -71,8 +71,10 @@ macOS の TCC は binary の **codesign identifier** で許可を識別する。
   (CGWindowID 解決のため。長年実績ある安定 API)。
 - **ポーリング禁止**。`NSWorkspace.didActivateApplication` で最前面アプリ
   切替を受け、最前面アプリ 1 つだけに AX オブザーバを張替え。
-- **debounce**: window=50ms / selection=180ms で過剰発火を集約。
-  `text_selected` は空選択・同一選択を抑止。
+- **debounce**: window=50ms / selection=250ms で過剰発火を集約。
+  `text_selected` は空選択・同一選択を抑止。selection の 250ms は PopClip
+  の体感に寄せた値。CGEventTap で mouseUp を直接捕まえる方が正確だが、
+  event tap 導入は構造変更が大きいので debounce 長で代替している。
 - **config は mtime hot reload**。タイマー禁止 — 発火時に mtime を見て
   必要なら遅延再読込。
 - **各コマンドは 10s で打ち切り**。`Process.terminate()` の見張り
