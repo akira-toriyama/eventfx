@@ -116,15 +116,15 @@ rm ~/Library/LaunchAgents/com.local.eventfx.plist ~/.local/bin/eventfx
 
 - **何も起きない**: アクセシビリティ未許可の可能性。`~/.local/state/eventfx.log` を確認し、`eventfx` を許可して再起動
 - **Homebrew コマンドが動かない**: launchd 既定 PATH に Homebrew は無い。plist の `EnvironmentVariables/PATH` で解決済 (`install.sh` 生成 / formula の `service do` ブロック)
-- **foreground でデバッグ**: `./run.sh` で stderr にイベントが流れる。一番早い確認方法
+- **foreground でデバッグ**: `./run.sh -f` で stderr にイベントが流れる。一番早い確認方法 (デフォルト `./run.sh` は `~/.local/bin` へ deploy)
 - ログ: `~/.local/state/eventfx.log` (本体)、`/tmp/eventfx.log` (`--debug` のみ)、`~/.local/state/eventfx.{out,err}.log` (launchd)
 
 ## 開発
 
 ```sh
 ./build.sh                 # swift build -c release + codesign + bin/ に配置
-./run.sh                   # build + stop + foreground (--debug 付き)
-./run.sh --install         # build + LaunchAgent 登録
+./run.sh                   # build + install.sh (~/.local/bin + LaunchAgent 再 bootstrap) — デフォルト
+./run.sh --foreground      # build + stop + foreground 実行 (--debug 付き)
 ./stop.sh                  # 全 eventfx インスタンスを停止
 ./setup-signing-cert.sh    # 初回のみ: 持続自己署名 identity を作成
 ./scripts/build-icon.sh    # AppIcon.icns を SF Symbol から再生成
