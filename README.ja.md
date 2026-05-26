@@ -70,6 +70,7 @@ cd ~/dev/eventfx
 eventfx                run as daemon (default)
 eventfx --debug        run + stderr + /tmp/eventfx.log にもログ出力
 eventfx --validate     config をパース・件数を表示して exit
+eventfx --doctor       セルフチェック (AX / config / log / daemon) して exit
 eventfx --version      バージョン表示して exit
 eventfx --help         ヘルプ表示して exit
 ```
