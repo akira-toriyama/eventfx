@@ -45,8 +45,8 @@ Tests/EventfxCoreTests/    Config.parseCommands / reloadIfChanged の単体 test
 | script | 用途 |
 |---|---|
 | `./build.sh` | `swift build -c release` → `bin/eventfx` cp → codesign (持続 / ad-hoc) |
-| `./run.sh` | build + stop existing + foreground 実行 (`--debug` 付き)。Ctrl+C 終了 |
-| `./run.sh --install` | `install.sh` 委譲 (LaunchAgent 登録) |
+| `./run.sh` | build + `install.sh` 委譲 (`~/.local/bin/eventfx` 配置 + LaunchAgent 再 bootstrap)。**変更検証のデフォルト** |
+| `./run.sh --foreground` (or `-f`) | build + stop existing + foreground 実行 (`--debug` 付き)。stderr で観察。Ctrl+C 終了 |
 | `./stop.sh` | brew service + LaunchAgent + stragglers 全停止 |
 | `./install.sh` | build → `~/.local/bin/eventfx` 配置 → plist 生成 → launchd 登録。自己発見パス・ユーザー名非依存 |
 | `./setup-signing-cert.sh` | 持続自己署名 identity 作成 (`eventfx-dev`) → AX 許可が rebuild を跨いで残る |
@@ -113,8 +113,33 @@ eventfx --help          print help, exit
 - 想定パターン: `[ "$EVENTFX_EVENT" = text_selected ] && cmd args...` の
   ように `$EVENTFX_EVENT` でガード。
 
-config 不在時は `exampleConfig` から自動生成される ([main.swift](main.swift) 内に
-リテラルで保持)。
+config 不在時は `exampleConfig` から自動生成される
+([Sources/EventfxCore/ExampleConfig.swift](Sources/EventfxCore/ExampleConfig.swift)
+内にリテラルで保持)。
+
+## 変更検証フロー (Claude/エージェント向け重要)
+
+コード変更後に「実機で挙動が変わったか」確認するときは **必ず `./run.sh`**
+を使うこと。`./build.sh` 単独では `bin/eventfx` だけが更新され、実稼働して
+いる `~/.local/bin/eventfx` (LaunchAgent が読むパス) には反映されない。
+過去にこのギャップを跨いで「古いバイナリで検証して挙動が変わらないと
+誤判断」した事故あり。`./run.sh` は `install.sh` 経由で `~/.local/bin` を
+更新し LaunchAgent を再 bootstrap するので安全。
+
+検証時の確認チェック:
+
+```sh
+# 走っている daemon の binary hash と build 成果物が一致するか
+shasum bin/eventfx "$HOME/.local/bin/eventfx"
+# 一致していなければ古い ./build.sh 単独実行が原因 → ./run.sh で deploy
+
+# daemon 自体の生存
+launchctl list | grep com.local.eventfx
+```
+
+foreground でログを直接見たいときだけ `./run.sh -f`。終了 (Ctrl+C) すると
+KeepAlive が `~/.local/bin/eventfx` から daemon を respawn する点に注意
+(=foreground 観測の "後始末" は不要)。
 
 ## Debugging
 
