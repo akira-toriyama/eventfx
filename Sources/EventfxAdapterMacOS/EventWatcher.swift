@@ -23,6 +23,13 @@ public final class EventWatcher {
     private var debounce: DispatchWorkItem?
     private var selectionDebounce: DispatchWorkItem?
     private var lastSelection: String = ""
+    private var lastLeftMouseUpAt: Date?
+    private var mouseMonitor: Any?
+
+    /// 左 mouseUp の "直近性" 判定窓。fireSelection が走った時刻からこの
+    /// 窓内に mouseUp が観測されていれば mouse-drag 由来とみなす。
+    /// 250ms (selection debounce) + 余裕で 0.5s に取る。
+    private static let mouseUpWindow: TimeInterval = 0.5
 
     public init(config: Config) {
         self.config = config
@@ -39,6 +46,14 @@ public final class EventWatcher {
         if let app = NSWorkspace.shared.frontmostApplication {
             attach(app, fire: false)   // 起動時の窓は記録のみ（発火しない）
         }
+        // PopClip 流ゲート: 左 mouseUp が直近にあったときだけ text_selected
+        // を fire する。キーボード shift+arrow 等の非マウス選択を除外する
+        // ための観測点。Accessibility 権限の範囲内で動く (mouse 監視に
+        // Input Monitoring 権限は不要)。
+        mouseMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.leftMouseUp]) { [weak self] _ in
+                self?.lastLeftMouseUpAt = Date()
+            }
         Logger.shared.log("started; config=\(Paths.configPath)")
     }
 
@@ -148,6 +163,9 @@ public final class EventWatcher {
         // ごとに来るのでドラッグ中は常に再スケジュールされ、ユーザが手を止め
         // た瞬間にだけ fire する形になる。CGEventTap で mouseUp を直接検出す
         // ればもっと正確だが、それは別件 (event tap 導入は構造変更)。
+        if Logger.shared.debugMode {
+            Logger.shared.log("selection-change notification received")
+        }
         selectionDebounce?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.fireSelection() }
         selectionDebounce = work
@@ -155,20 +173,75 @@ public final class EventWatcher {
     }
 
     private func fireSelection() {
+        // PopClip 流ゲート: 直近 mouseUpWindow 内に左 mouseUp が来ていなけ
+        // れば fire しない。キーボード選択 (shift+arrow / cmd+a) や
+        // プログラム的な選択変更を意図的に除外する。
+        guard let mouseUp = lastLeftMouseUpAt,
+              Date().timeIntervalSince(mouseUp)
+                < EventWatcher.mouseUpWindow else {
+            if Logger.shared.debugMode {
+                let age = lastLeftMouseUpAt.map {
+                    String(format: "%.2fs", Date().timeIntervalSince($0))
+                } ?? "never"
+                Logger.shared.log("selection skipped: no recent left mouseUp "
+                    + "(last=\(age))")
+            }
+            return
+        }
+
         guard let app = appElement else { return }
         var focusedRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(app,
                 kAXFocusedUIElementAttribute as CFString,
                 &focusedRef) == .success,
-              let focused = focusedRef else { return }
+              let focused = focusedRef else {
+            if Logger.shared.debugMode {
+                Logger.shared.log("selection skipped: no focused UI element "
+                    + "(AX not exposing element for this app)")
+            }
+            return
+        }
         let elem = focused as! AXUIElement
+
+        // IME 変換中の偽発火抑止: focused element の実選択範囲が 0 文字なら
+        // (= ハイライトされた選択は無く、marked text だけが動いている状態)
+        // fire しない。日本語入力中の毎キーストロークで text_selected が走る
+        // のを防ぐ。AX 未対応アプリは取得失敗するので透過してテキスト側の
+        // 既存フィルタ (!isEmpty) に倒す。
+        var rangeRef: CFTypeRef?
+        if AXUIElementCopyAttributeValue(elem,
+                kAXSelectedTextRangeAttribute as CFString,
+                &rangeRef) == .success,
+           let rangeVal = rangeRef {
+            var range = CFRange()
+            if AXValueGetValue(rangeVal as! AXValue, .cfRange, &range),
+               range.length == 0 {
+                if Logger.shared.debugMode {
+                    Logger.shared.log("selection skipped: range length=0 "
+                        + "(IME composing or cursor-only)")
+                }
+                return
+            }
+        }
+
         var textRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(elem,
                 kAXSelectedTextAttribute as CFString,
                 &textRef) == .success,
               let sel = textRef as? String,
-              !sel.isEmpty else { return }
-        if sel == lastSelection { return }   // 同一選択の再発火を抑止
+              !sel.isEmpty else {
+            if Logger.shared.debugMode {
+                Logger.shared.log("selection skipped: empty / unreadable "
+                    + "selected text (AX may not expose text for this widget)")
+            }
+            return
+        }
+        if sel == lastSelection {
+            if Logger.shared.debugMode {
+                Logger.shared.log("selection skipped: same as previous")
+            }
+            return
+        }
         lastSelection = sel
 
         let p = NSEvent.mouseLocation   // Cocoa 座標（wand --show-menu と整合）
