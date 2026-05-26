@@ -39,22 +39,38 @@ func envOr(_ key: String, _ fallback: String) -> String {
     return fallback
 }
 
+let eventfxVersion = "0.1.0"
+var debugMode = false
+
 let home = NSHomeDirectory()
 let configDir = envOr("XDG_CONFIG_HOME", home + "/.config") + "/eventfx"
 let configPath = configDir + "/config"
 let logPath = home + "/.local/state/eventfx.log"
+let debugLogPath = "/tmp/eventfx.log"
+
+func appendLine(_ data: Data, to path: String) {
+    if let fh = FileHandle(forWritingAtPath: path) {
+        fh.seekToEndOfFile()
+        fh.write(data)
+        try? fh.close()
+    } else {
+        try? data.write(to: URL(fileURLWithPath: path))
+    }
+}
 
 func log(_ msg: String) {
     let line = "\(ISO8601DateFormatter().string(from: Date())) \(msg)\n"
+    let data = line.data(using: .utf8)!
     let dir = (logPath as NSString).deletingLastPathComponent
     try? FileManager.default.createDirectory(atPath: dir,
                                              withIntermediateDirectories: true)
-    if let fh = FileHandle(forWritingAtPath: logPath) {
-        fh.seekToEndOfFile()
-        fh.write(line.data(using: .utf8)!)
-        try? fh.close()
-    } else {
-        try? line.write(toFile: logPath, atomically: true, encoding: .utf8)
+    appendLine(data, to: logPath)
+    // --debug: surface to stderr (so foreground ./run.sh streams events)
+    // and tee to a tmp log that's easy to `tail -f` independently of the
+    // production log path.
+    if debugMode {
+        FileHandle.standardError.write(data)
+        appendLine(data, to: debugLogPath)
     }
 }
 
@@ -320,6 +336,64 @@ final class EventWatcher {
         }
     }
 }
+
+// MARK: - CLI surface
+//
+// `eventfx`              run as daemon (default)
+// `eventfx --debug`      run + stderr + /tmp/eventfx.log
+// `eventfx --validate`   parse config, report, exit
+// `eventfx --version`    print version, exit
+// `eventfx --help`       print help, exit
+
+func printHelp() {
+    print("""
+    eventfx \(eventfxVersion) — macOS event-broker daemon
+    Dispatches configured commands on AX events (window focus, text selection).
+
+    USAGE
+      eventfx                run as daemon (default)
+      eventfx --debug        run + log to stderr and /tmp/eventfx.log
+      eventfx --validate     parse config, report status, exit
+      eventfx --version      print version, exit
+      eventfx --help         print this help, exit
+
+    PATHS
+      config:  \(configPath)
+      log:     \(logPath)
+      debug:   \(debugLogPath)  (only with --debug)
+
+    See: https://github.com/akira-toriyama/eventfx
+    """)
+}
+
+func runValidate() -> Int32 {
+    let exists = FileManager.default.fileExists(atPath: configPath)
+    let cfg = Config()
+    cfg.reloadIfChanged()
+    print("config: \(configPath)\(exists ? "" : " (missing)")")
+    print("commands: \(cfg.commands.count)")
+    return 0
+}
+
+func dieUnknownFlag(_ arg: String) -> Never {
+    FileHandle.standardError.write(
+        Data("eventfx: unknown flag: \(arg)\n".utf8))
+    FileHandle.standardError.write(
+        Data("eventfx: try --help\n".utf8))
+    exit(2)
+}
+
+for arg in CommandLine.arguments.dropFirst() {
+    switch arg {
+    case "--help", "-h":     printHelp(); exit(0)
+    case "--version", "-V":  print("eventfx \(eventfxVersion)"); exit(0)
+    case "--validate":       exit(runValidate())
+    case "--debug":          debugMode = true
+    default:                 dieUnknownFlag(arg)
+    }
+}
+
+// MARK: - Daemon
 
 let trusted = AXIsProcessTrustedWithOptions(
     ["AXTrustedCheckOptionPrompt": true] as CFDictionary)

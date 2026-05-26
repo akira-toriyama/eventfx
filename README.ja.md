@@ -6,15 +6,15 @@
 
 [English](README.md) · **日本語**
 
-AX 由来のイベント（**フォーカス窓変化** / **テキスト選択変化**）を検知して、設定された任意コマンドを実行する macOS 常駐デーモン。純粋な受動オブザーバで、外部のウィンドウマネージャに依存しない。効果音・枠強調・ランチャー表示などの「効果」は設定（コマンド文字列）側の責務で、本体は **検知とディスパッチしか持たない（ゼロハードコード）**。
+AX 由来のイベント (**フォーカス窓変化** / **テキスト選択変化**) を検知して、設定された任意コマンドを実行する macOS 常駐デーモン。純粋な受動オブザーバで、外部のウィンドウマネージャに依存しない。効果音・枠強調・ランチャー表示などの「効果」は設定 (コマンド文字列) 側の責務で、本体は **検知とディスパッチしか持たない (ゼロハードコード)**。
 
 ## 特徴
 
 - **ポーリングしない**。`NSWorkspace.didActivateApplication` ＋ AX イベント駆動
 - 2 種類のイベント: `window_focused`, `text_selected`。`$EVENTFX_EVENT` で分岐
-- 最前面アプリ 1 つにだけ AX オブザーバを張替え＝軽量
-- 設定はホットリロード（保存すれば次の発火時に自動反映・再起動不要）
-- 追加依存なし（純 `swiftc`）
+- 最前面アプリ 1 つにだけ AX オブザーバを張替え = 軽量
+- 設定はホットリロード (保存すれば次の発火時に自動反映・再起動不要)
+- 追加依存なし (純 `swiftc`)
 
 ## アーキテクチャ
 
@@ -33,11 +33,20 @@ flowchart TD
 
 ## 要件
 
-- macOS 13 以降（Ventura+。Homebrew formula の `depends_on macos: :ventura` と一致）
-- Xcode Command Line Tools（`swiftc`）。`NSWorkspace` と AX API を使用
-- アクセシビリティ権限（初回プロンプト。後述）
+- macOS 13 以降 (Ventura+。Homebrew formula の `depends_on macos: :ventura` と一致)
+- Xcode Command Line Tools (`swiftc`)。`NSWorkspace` と AX API を使用
+- アクセシビリティ権限 (初回プロンプト)
 
 ## インストール
+
+Homebrew (推奨):
+
+```sh
+brew install akira-toriyama/tap/eventfx
+brew services start eventfx
+```
+
+ソースから (tap 不使用):
 
 ```sh
 git clone https://github.com/akira-toriyama/eventfx.git ~/dev/eventfx
@@ -45,23 +54,34 @@ cd ~/dev/eventfx
 ./install.sh
 ```
 
-`install.sh` は次を自己発見パスで行う（ユーザー名非依存）:
+`install.sh` は次を自己発見パスで行う (ユーザー名非依存):
 
 1. `build.sh` でビルド
 2. `~/.local/bin/eventfx` へ配置
-3. `~/Library/LaunchAgents/com.local.eventfx.plist` を生成（`EnvironmentVariables/PATH` 込み）
-4. `launchctl` で LaunchAgent 登録（`RunAtLoad` / `KeepAlive`）
+3. `~/Library/LaunchAgents/com.local.eventfx.plist` を生成 (`EnvironmentVariables/PATH` 込み)
+4. `launchctl` で LaunchAgent 登録
 
 初回はシステム設定 > プライバシーとセキュリティ > アクセシビリティ で
-`~/.local/bin/eventfx` を許可してください。
+`eventfx` を許可してください。
+
+## CLI
+
+```
+eventfx                run as daemon (default)
+eventfx --debug        run + stderr + /tmp/eventfx.log にもログ出力
+eventfx --validate     config をパース・件数を表示して exit
+eventfx --version      バージョン表示して exit
+eventfx --help         ヘルプ表示して exit
+```
 
 ## 設定
 
 `${XDG_CONFIG_HOME:-$HOME/.config}/eventfx/config`
 
-- **1 行＝1 コマンド**（`/bin/sh -c` で実行）。空行と `#` 行は無視
-- 保存すれば次の発火時に自動反映（mtime ホットリロード・タイマー無し）
+- **1 行 = 1 コマンド** (`/bin/sh -c` で実行)。空行と `#` 行は無視
+- 保存すれば次の発火時に自動反映 (mtime ホットリロード・タイマー無し)
 - `$EVENTFX_EVENT` で種別を判定し、各行で必要に応じてガードする
+- **バックスラッシュ継続 (`\`) は効かない** — eventfx は行ごとに別コマンドとして渡すため。1 コマンドは必ず物理 1 行で書く
 - 各コマンドへ context を環境変数で注入:
 
 | 変数 | イベント | 内容 |
@@ -72,16 +92,12 @@ cd ~/dev/eventfx
 | `EVENTFX_WINDOW_ID` | `window_focused` | フォーカス窓の CGWindowID |
 | `EVENTFX_TITLE` | `window_focused` | ウィンドウタイトル |
 | `EVENTFX_SELECTION` | `text_selected` | 選択された文字列 |
-| `EVENTFX_CURSOR_X` / `EVENTFX_CURSOR_Y` | `text_selected` | 発火時点のマウス座標（Cocoa 系・全スクリーン） |
+| `EVENTFX_CURSOR_X` / `EVENTFX_CURSOR_Y` | `text_selected` | 発火時のマウス座標 (Cocoa 系・全スクリーン) |
 
-例 — テキスト選択時にマウス近くへ wand ランチャーを開く:
+例 — テキスト選択時にマウス近くへ [wand](https://github.com/akira-toriyama/wand) ランチャーを開く:
 
 ```sh
-[ "$EVENTFX_EVENT" = text_selected ] && \
-  stroke --show-menu \
-    --items "$HOME/.config/eventfx/text_selected.toml" \
-    --at "$EVENTFX_CURSOR_X" "$EVENTFX_CURSOR_Y" \
-    --selection "$EVENTFX_SELECTION"
+[ "$EVENTFX_EVENT" = text_selected ] && stroke --show-menu --items "$HOME/.config/eventfx/text_selected.toml" --at "$EVENTFX_CURSOR_X" "$EVENTFX_CURSOR_Y" --selection "$EVENTFX_SELECTION"
 ```
 
 config 不在時はサンプルが自動生成される。暴走防止のため各コマンドは 10 秒で打ち切り。
@@ -89,21 +105,35 @@ config 不在時はサンプルが自動生成される。暴走防止のため�
 ## アンインストール
 
 ```sh
+brew services stop eventfx
+brew uninstall eventfx
+# install.sh 経由の場合:
 launchctl bootout gui/$(id -u)/com.local.eventfx
 rm ~/Library/LaunchAgents/com.local.eventfx.plist ~/.local/bin/eventfx
 ```
 
 ## トラブルシュート
 
-- **何も起きない**: アクセシビリティ未許可の可能性。`~/.local/state/eventfx.log` を確認し、`~/.local/bin/eventfx` を許可して再起動
-- **Homebrew コマンドが動かない**: launchd 既定 PATH に Homebrew は無い。plist の `EnvironmentVariables/PATH` で解決済（`install.sh` 生成）。独自に PATH 依存コマンドを足す場合は留意
-- ログ: `~/.local/state/eventfx.log`（本体）、`~/.local/state/eventfx.{out,err}.log`（launchd）
+- **何も起きない**: アクセシビリティ未許可の可能性。`~/.local/state/eventfx.log` を確認し、`eventfx` を許可して再起動
+- **Homebrew コマンドが動かない**: launchd 既定 PATH に Homebrew は無い。plist の `EnvironmentVariables/PATH` で解決済 (`install.sh` 生成 / formula の `service do` ブロック)
+- **foreground でデバッグ**: `./run.sh` で stderr にイベントが流れる。一番早い確認方法
+- ログ: `~/.local/state/eventfx.log` (本体)、`/tmp/eventfx.log` (`--debug` のみ)、`~/.local/state/eventfx.{out,err}.log` (launchd)
 
 ## 開発
 
-- 本体は単一ファイル `main.swift`。`./build.sh` で `bin/eventfx` を生成（git 管理外）
-- 推奨コミット規約: gitmoji + Conventional Commits（強制はしない）
-- リリースノートは `cliff.toml` に従い release ワークフローが自動生成
+```sh
+./build.sh                 # bin/eventfx を生成
+./run.sh                   # build + stop + foreground (--debug 付き)
+./run.sh --install         # build + LaunchAgent 登録
+./stop.sh                  # 全 eventfx インスタンスを停止
+./scripts/build-icon.sh    # AppIcon.icns を SF Symbol から再生成
+```
+
+- 本体は単一ファイル `main.swift`。`./build.sh` で `bin/eventfx` を生成 (git 管理外)
+- 推奨コミット規約: gitmoji + Conventional Commits (`scripts/hooks/commit-msg` で検証。
+  有効化: `git config core.hooksPath scripts/hooks`)
+- リリースノートは `release.yml` が `cliff.toml` に従い自動生成
+- `update-tap.yml` がリリース後に `akira-toriyama/homebrew-tap` を自動 bump
 
 ## ライセンス
 

@@ -15,7 +15,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
       - name: Run shellcheck
+        # scripts/build-icon.sh is zsh — shellcheck supports sh/bash/dash/ksh
+        # only, so we skip it explicitly. zsh-specific syntax is fine there
+        # (it lives alongside zsh-only family scripts in sister repos).
         run: |
           shellcheck --shell=sh \
             build.sh \
-            install.sh
+            install.sh \
+            run.sh \
+            stop.sh \
+            scripts/hooks/commit-msg
