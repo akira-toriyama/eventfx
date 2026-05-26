@@ -17,6 +17,7 @@ hardcoding**.
 
 - **No polling.** Driven by `NSWorkspace.didActivateApplication` + AX events
 - Two event types: `window_focused`, `text_selected` — dispatch via `$EVENTFX_EVENT`
+- `text_selected` fires **only on mouse-drag selection** (keyboard / IME / programmatic changes are skipped)
 - Re-binds an AX observer to only the single frontmost app → lightweight
 - Hot-reloads config (save → applied on next event, no restart)
 - No external dependencies (plain `swiftc`)
@@ -30,7 +31,9 @@ flowchart TD
     C -- kAXFocusedWindowChanged<br/>kAXMainWindowChanged --> D[Focused CGWindowID changed?]
     C -- kAXSelectedTextChanged --> S[Read selected text<br/>non-empty &amp; changed?]
     D -- yes --> F[50ms debounce]
-    S -- yes --> T[180ms debounce]
+    S -- yes --> M{Recent left-mouse drag?<br/>(CGEventTap)}
+    M -- yes --> T[250ms debounce]
+    M -- no --> X[skip<br/>keyboard / IME / programmatic]
     F --> G[Lazy-reload config by mtime]
     T --> G
     G --> H[Run each line via /bin/sh -c<br/>inject EVENTFX_* env]

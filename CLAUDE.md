@@ -71,8 +71,16 @@ macOS の TCC は binary の **codesign identifier** で許可を識別する。
   (CGWindowID 解決のため。長年実績ある安定 API)。
 - **ポーリング禁止**。`NSWorkspace.didActivateApplication` で最前面アプリ
   切替を受け、最前面アプリ 1 つだけに AX オブザーバを張替え。
-- **debounce**: window=50ms / selection=180ms で過剰発火を集約。
-  `text_selected` は空選択・同一選択を抑止。
+- **debounce**: window=50ms / selection=250ms で過剰発火を集約。
+  `text_selected` は空選択・同一選択を抑止。selection の 250ms は PopClip
+  体感に寄せた値。
+- **`text_selected` は "マウスドラッグ選択 AND AX 通知" の AND**。
+  キーボード選択 / IME / プログラム的選択を除外するため、CGEventTap で
+  `leftMouseDown → leftMouseDragged → leftMouseUp` のシーケンスを観測し、
+  drag 込みで完了した mouseUp の直近性 (0.5s 窓) を fire 条件に入れる。
+  CGEventTap は listenOnly モードで Accessibility 権限の範囲内で動く。
+- **IME 抑止**: `kAXSelectedTextRangeAttribute` の length=0 を見て
+  marked text 状態の偽発火を弾く。
 - **config は mtime hot reload**。タイマー禁止 — 発火時に mtime を見て
   必要なら遅延再読込。
 - **各コマンドは 10s で打ち切り**。`Process.terminate()` の見張り
