@@ -17,8 +17,11 @@ jobs:
       - name: Build (release)
         run: ./build.sh
 
+      - name: Test (XCTest via swift test)
+        run: swift test
+
       - name: Sanity check binary
-        run: file bin/eventfx && test -x bin/eventfx
+        run: file bin/eventfx && test -x bin/eventfx && ./bin/eventfx --validate
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

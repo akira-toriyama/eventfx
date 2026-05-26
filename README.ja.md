@@ -122,14 +122,24 @@ rm ~/Library/LaunchAgents/com.local.eventfx.plist ~/.local/bin/eventfx
 ## 開発
 
 ```sh
-./build.sh                 # bin/eventfx を生成
+./build.sh                 # swift build -c release + codesign + bin/ に配置
 ./run.sh                   # build + stop + foreground (--debug 付き)
 ./run.sh --install         # build + LaunchAgent 登録
 ./stop.sh                  # 全 eventfx インスタンスを停止
+./setup-signing-cert.sh    # 初回のみ: 持続自己署名 identity を作成
 ./scripts/build-icon.sh    # AppIcon.icns を SF Symbol から再生成
+swift test                 # XCTest 実行 (EventfxCoreTests)
 ```
 
-- 本体は単一ファイル `main.swift`。`./build.sh` で `bin/eventfx` を生成 (git 管理外)
+- SwiftPM プロジェクト。ヘキサゴナル 3 層分割:
+  `Sources/EventfxCore` (純粋ロジック) /
+  `Sources/EventfxAdapterMacOS` (AX + dispatch) /
+  `Sources/EventfxApp` (CLI + @main)
+- テスト: `Tests/EventfxCoreTests/` (config parser を中心に)
+- `./build.sh` は `setup-signing-cert.sh` で作った持続 identity があればそれで
+  codesign、無ければ ad-hoc に fallback。持続 identity を使うと
+  Accessibility 許可が rebuild を跨いで残る (TCC は codesign identifier で
+  許可を識別するため)
 - 推奨コミット規約: gitmoji + Conventional Commits (`scripts/hooks/commit-msg` で検証。
   有効化: `git config core.hooksPath scripts/hooks`)
 - リリースノートは `release.yml` が `cliff.toml` に従い自動生成

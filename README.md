@@ -135,14 +135,23 @@ rm ~/Library/LaunchAgents/com.local.eventfx.plist ~/.local/bin/eventfx
 ## Development
 
 ```sh
-./build.sh                 # produce bin/eventfx
+./build.sh                 # swift build -c release + codesign + cp to bin/
 ./run.sh                   # build + stop existing + foreground --debug
 ./run.sh --install         # build + LaunchAgent install
 ./stop.sh                  # kill all eventfx instances (brew / launchd / orphans)
+./setup-signing-cert.sh    # one-time: create persistent self-signed identity
 ./scripts/build-icon.sh    # regenerate AppIcon.icns from SF Symbol
+swift test                 # run XCTest suite (EventfxCoreTests)
 ```
 
-- Single-file `main.swift`. `./build.sh` produces `bin/eventfx` (git-ignored)
+- SwiftPM project, hexagonal 3-layer split:
+  `Sources/EventfxCore` (pure logic) /
+  `Sources/EventfxAdapterMacOS` (AX + dispatch) /
+  `Sources/EventfxApp` (CLI + @main)
+- Tests in `Tests/EventfxCoreTests/` — exercise the config parser
+- `./build.sh` codesigns with the persistent identity (`setup-signing-cert.sh`)
+  if available, else ad-hoc. The persistent identity keeps the Accessibility
+  grant alive across rebuilds (TCC keys on the codesign identifier)
 - Suggested commit convention: gitmoji + Conventional Commits
   (`scripts/hooks/commit-msg` validates; enable with
   `git config core.hooksPath scripts/hooks`)
