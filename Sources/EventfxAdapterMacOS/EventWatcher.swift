@@ -372,7 +372,13 @@ public final class EventWatcher {
         case .leftMouseDragged:
             if me.mouseDragInProgress { me.dragMoved = true }
         case .leftMouseUp:
-            if me.mouseDragInProgress && me.dragMoved {
+            // ドラッグ (= mouseDragged が間に挟まった) OR ダブル/トリプル
+            // クリック (= clickCount >= 2) を「マウス由来の text 選択操作」
+            // とみなす。後者は drag が無いので clickCount を補助判定に使う
+            // — word/paragraph 選択 (double/triple click) を救うため。
+            let clickCount = event.getIntegerValueField(
+                .mouseEventClickState)
+            if me.mouseDragInProgress && (me.dragMoved || clickCount >= 2) {
                 me.lastDragMouseUpAt = Date()
                 me.dragEndLocation = NSEvent.mouseLocation
             }
