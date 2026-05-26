@@ -45,10 +45,26 @@ public final class EventWatcher {
     nonisolated(unsafe) private var dragMoved = false
     nonisolated(unsafe) private var lastDragMouseUpAt: Date?
     nonisolated(unsafe) private var dragEndLocation: CGPoint?
+    nonisolated(unsafe) private var mouseDownLocation: CGPoint?
+
+    /// mouseDown 位置と mouseUp 位置の距離がこの px を超えたら "ショート
+    /// ドラッグ" とみなして drag-confirmed 扱いにする。短いドラッグは
+    /// macOS が leftMouseDragged event を出さないことがあるため、
+    /// dragMoved フラグだけだと検出漏れる。
+    /// nonisolated: tapCallback (nonisolated context) から参照するため。
+    nonisolated private static let shortDragThreshold: CGFloat = 3
 
     /// 直近の "drag-confirmed mouseUp" がこの窓内なら text_selected を
-    /// マウス由来とみなす。AX 通知の 250ms debounce + 余裕で 0.5s。
-    private static let mouseUpWindow: TimeInterval = 0.5
+    /// マウス由来とみなす。重めの app (Electron/Chrome 系) で AX 通知が
+    /// mouseUp 後に遅延するケースに余裕を持たせて 1.0s。
+    private static let mouseUpWindow: TimeInterval = 1.0
+
+    /// AX selection-change 通知の集約 debounce。最後の通知から
+    /// この時間沈黙したら settled とみなして fireSelection 起動。
+    /// 短いほど反応早いが、ドラッグ途中の中間状態で誤発火しやすい。
+    /// (同名のインスタンス変数 `selectionDebounce: DispatchWorkItem?`
+    ///  と区別するため Duration suffix)
+    private static let selectionDebounceDuration: TimeInterval = 0.15
 
     /// fire 時点で「マウスが drag 終了位置からこの距離以上離れていない」
     /// ことを要求する。選択完了後にユーザがすぐ別の場所へ移動した場合の
@@ -188,13 +204,16 @@ public final class EventWatcher {
         if Logger.shared.debugMode {
             Logger.shared.log("selection-change notification received")
         }
-        // ドラッグ中は 1 文字ずつ通知が来るので 250ms に集約。PopClip 体感に
-        // 寄せた値。CGEventTap で mouseUp を直接検出しているので、ここの
-        // 待ち時間は "AX の繰り返し通知をどれだけ待ち合わせるか" だけ。
+        // ドラッグ中は 1 文字ずつ通知が来るので selectionDebounce に集約。
+        // CGEventTap で mouseUp を直接検出しているので、ここの待ち時間は
+        // "AX の繰り返し通知をどれだけ待ち合わせるか" だけ。短めにして
+        // 反応性を上げる (mouseUpWindow が広めなので skip 増にはなりにくい)。
         selectionDebounce?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.fireSelection() }
         selectionDebounce = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: work)
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + EventWatcher.selectionDebounceDuration,
+            execute: work)
     }
 
     private func fireSelection() {
@@ -386,6 +405,7 @@ public final class EventWatcher {
         case .leftMouseDown:
             me.mouseDragInProgress = true
             me.dragMoved = false
+            me.mouseDownLocation = event.location
             // 新しい drag = 新しいユーザ意図。同一 text の再選択でも
             // 発火させたいので lastSelection をリセットする。
             // 単純クリックや keyboard 選択は下流の drag-confirmed mouseUp
@@ -394,18 +414,31 @@ public final class EventWatcher {
         case .leftMouseDragged:
             if me.mouseDragInProgress { me.dragMoved = true }
         case .leftMouseUp:
-            // ドラッグ (= mouseDragged が間に挟まった) OR ダブル/トリプル
-            // クリック (= clickCount >= 2) を「マウス由来の text 選択操作」
-            // とみなす。後者は drag が無いので clickCount を補助判定に使う
-            // — word/paragraph 選択 (double/triple click) を救うため。
+            // 「マウス由来の text 選択操作」とみなす条件 (いずれか):
+            //   1. mouseDragged が間に挟まった (= 普通の drag)
+            //   2. clickCount >= 2 (= double/triple click で word/paragraph)
+            //   3. mouseDown→mouseUp 間で 3px 超移動 (= 短い drag。
+            //      macOS は短い drag だと mouseDragged を吐かないことが
+            //      あり、条件 1 だけだと取りこぼす)
             let clickCount = event.getIntegerValueField(
                 .mouseEventClickState)
-            if me.mouseDragInProgress && (me.dragMoved || clickCount >= 2) {
+            var shortDrag = false
+            if let down = me.mouseDownLocation {
+                let dx = event.location.x - down.x
+                let dy = event.location.y - down.y
+                if (dx * dx + dy * dy).squareRoot()
+                    > EventWatcher.shortDragThreshold {
+                    shortDrag = true
+                }
+            }
+            if me.mouseDragInProgress
+                && (me.dragMoved || clickCount >= 2 || shortDrag) {
                 me.lastDragMouseUpAt = Date()
                 me.dragEndLocation = NSEvent.mouseLocation
             }
             me.mouseDragInProgress = false
             me.dragMoved = false
+            me.mouseDownLocation = nil
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             // OS が tap を一時無効化したら即 re-enable して状況をログに
             // 残す ("2 回目以降出ない" 系の原因がここなら可視化される)。
