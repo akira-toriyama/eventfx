@@ -21,22 +21,47 @@ AX 由来のイベント (フォーカス窓変化・テキスト選択変化) �
 Cocoa 系 (ボトム左原点・全スクリーン)。wand `stroke --show-menu --at`
 契約と直接整合する。
 
+## Architecture (SwiftPM 3-layer)
+
+`facet` / `chord` / `perch` と同じヘキサゴナル分割:
+
+```
+Sources/
+  EventfxCore/             pure logic: paths, logger, config parser.
+                           Foundation のみ。AppKit / AX を含まない。
+                           XCTest で単体検証可能。
+  EventfxAdapterMacOS/     AX オブザーバ (focused window / selected text)、
+                           NSEvent.mouseLocation 取得、/bin/sh 経由の
+                           プロセスディスパッチ。Cocoa/AX 型はここだけ。
+  EventfxApp/              @main, CLI argv 解析, NSApplication 起動。
+Tests/EventfxCoreTests/    Config.parseCommands / reloadIfChanged の単体 test。
+```
+
 ## Build / Run
 
-ビルド + ランタイム依存は Xcode CLT (`swiftc`) のみ。SwiftPM を**敢えて使わない** —
-本体が単一ファイルなので overhead に見合わない。
+ビルドは SwiftPM (`swift build -c release`)。`build.sh` がそれをラップして
+`bin/eventfx` に配置 + codesign する。
 
 | script | 用途 |
 |---|---|
-| `./build.sh` | `swiftc -O` で `bin/eventfx` 生成 |
+| `./build.sh` | `swift build -c release` → `bin/eventfx` cp → codesign (持続 / ad-hoc) |
 | `./run.sh` | build + stop existing + foreground 実行 (`--debug` 付き)。Ctrl+C 終了 |
 | `./run.sh --install` | `install.sh` 委譲 (LaunchAgent 登録) |
 | `./stop.sh` | brew service + LaunchAgent + stragglers 全停止 |
 | `./install.sh` | build → `~/.local/bin/eventfx` 配置 → plist 生成 → launchd 登録。自己発見パス・ユーザー名非依存 |
+| `./setup-signing-cert.sh` | 持続自己署名 identity 作成 (`eventfx-dev`) → AX 許可が rebuild を跨いで残る |
 | `./scripts/build-icon.sh` | SF Symbol から `AppIcon.icns` 生成 (`dot.radiowaves.left.and.right` / teal) |
 
 Production は Homebrew (`brew install akira-toriyama/tap/eventfx`) 経由を
 推奨。`./install.sh` は素の launchd 直登録ルート。
+
+### TCC (Accessibility) 安定化
+
+macOS の TCC は binary の **codesign identifier** で許可を識別する。Swift の
+既定 ad-hoc 署名は rebuild ごとに識別子が変わるため AX 許可が吹っ飛ぶ。
+`./setup-signing-cert.sh` で作る `eventfx-dev` 自己署名 identity を使って
+`./build.sh` 末尾で再署名すると、rebuild を跨いで TCC 許可が残る。`.signing-id`
+ファイル不在 / cert 不在なら ad-hoc に透過 fallback。
 
 ## Architecture (制約)
 
