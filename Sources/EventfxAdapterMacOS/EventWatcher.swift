@@ -39,10 +39,16 @@ public final class EventWatcher {
     nonisolated(unsafe) private var mouseDragInProgress = false
     nonisolated(unsafe) private var dragMoved = false
     nonisolated(unsafe) private var lastDragMouseUpAt: Date?
+    nonisolated(unsafe) private var lastMouseMovedAt: Date?
 
     /// 直近の "drag-confirmed mouseUp" がこの窓内なら text_selected を
     /// マウス由来とみなす。AX 通知の 250ms debounce + 余裕で 0.5s。
     private static let mouseUpWindow: TimeInterval = 0.5
+
+    /// fire 時点で「マウスが直近この時間ぶん静止している」ことを要求する。
+    /// 選択完了後にユーザがすぐ別の場所へ移動した場合の発火を避けるための
+    /// 追加ゲート。jitter (リリース時の微小な動き) を許容するため軽め。
+    private static let stillnessThreshold: TimeInterval = 0.15
 
     public init(config: Config) {
         self.config = config
@@ -178,7 +184,7 @@ public final class EventWatcher {
     }
 
     private func fireSelection() {
-        // PopClip 流ゲート: 直近 mouseUpWindow 内に drag-confirmed mouseUp
+        // PopClip 流ゲート 1: 直近 mouseUpWindow 内に drag-confirmed mouseUp
         // が来ていなければ fire しない。これがキーボード選択
         // (shift+arrow / cmd+a) や、プログラム的な選択変更を除外する核。
         guard let mouseUp = lastDragMouseUpAt,
@@ -192,6 +198,20 @@ public final class EventWatcher {
                     + "mouseUp (last=\(age))")
             }
             return
+        }
+
+        // PopClip 流ゲート 2: マウスが直近 stillnessThreshold ぶん動いていない
+        // こと。選択完了 → すぐ別の場所へ移動した場合の発火を避ける
+        // (= 「もう次の操作に移った」と判断する)。
+        if let lastMove = lastMouseMovedAt {
+            let stillness = Date().timeIntervalSince(lastMove)
+            if stillness < EventWatcher.stillnessThreshold {
+                if Logger.shared.debugMode {
+                    Logger.shared.log("selection skipped: mouse still moving "
+                        + "(stillness=\(String(format: "%.2fs", stillness)))")
+                }
+                return
+            }
         }
 
         guard let app = appElement else { return }
@@ -302,6 +322,9 @@ public final class EventWatcher {
               (1 << CGEventType.leftMouseDown.rawValue)
             | (1 << CGEventType.leftMouseDragged.rawValue)
             | (1 << CGEventType.leftMouseUp.rawValue)
+            // mouseMoved は no-button-pressed の単純移動。
+            // 高頻度に来るので callback は flag set だけで返す。
+            | (1 << CGEventType.mouseMoved.rawValue)
 
         let me = Unmanaged.passUnretained(self).toOpaque()
         guard let tap = CGEvent.tapCreate(
@@ -320,7 +343,7 @@ public final class EventWatcher {
         eventTapSource = src
         CFRunLoopAddSource(CFRunLoopGetCurrent(), src, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
-        Logger.shared.log("event-tap: installed (left mouse down/drag/up)")
+        Logger.shared.log("event-tap: installed (left mouse down/drag/up + mouseMoved)")
     }
 
     /// CGEventTap callback. `@convention(c)` 必須なので static + nonisolated。
@@ -345,6 +368,8 @@ public final class EventWatcher {
             }
             me.mouseDragInProgress = false
             me.dragMoved = false
+        case .mouseMoved:
+            me.lastMouseMovedAt = Date()
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             // OS が tap を一時無効化したら即 re-enable。`listenOnly` で
             // 走るので timeout はほぼ起きないが念のため。
