@@ -305,14 +305,21 @@ public final class EventWatcher {
         lastSelection = sel
 
         let p = NSEvent.mouseLocation   // Cocoa 座標（wand --show-menu と整合）
+        // 選択が起きた窓 (= 現在 focused window) を config 側の分岐
+        // (Slack の選択だけ別動線・特定窓は launcher 抑止 など) に使えるよう、
+        // window_focused と同じ EVENTFX_WINDOW_ID / TITLE を text_selected
+        // でも出す。取得不可は (0, "") にフォールバック。
+        let (wid, title) = focusedWindow()
         dispatchCommands(
             event: "text_selected",
             extraEnv: [
                 "EVENTFX_SELECTION": sel,
                 "EVENTFX_CURSOR_X": String(format: "%.0f", p.x),
                 "EVENTFX_CURSOR_Y": String(format: "%.0f", p.y),
+                "EVENTFX_WINDOW_ID": String(wid),
+                "EVENTFX_TITLE": title,
             ],
-            logDetail: "len=\(sel.count) at=(\(Int(p.x)),\(Int(p.y)))")
+            logDetail: "len=\(sel.count) at=(\(Int(p.x)),\(Int(p.y))) win=\(wid)")
     }
 
     // MARK: - Command dispatch (/bin/sh -c)

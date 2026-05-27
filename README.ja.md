@@ -93,10 +93,14 @@ eventfx --help         ヘルプ表示して exit
 | `EVENTFX_EVENT` | 両方 | `"window_focused"` または `"text_selected"` |
 | `EVENTFX_PID` | 両方 | アプリの PID |
 | `EVENTFX_APP` | 両方 | アプリ名 |
-| `EVENTFX_WINDOW_ID` | `window_focused` | フォーカス窓の CGWindowID |
-| `EVENTFX_TITLE` | `window_focused` | ウィンドウタイトル |
+| `EVENTFX_WINDOW_ID` | 両方 | フォーカス窓の CGWindowID (取得不可は `0`) |
+| `EVENTFX_TITLE` | 両方 | フォーカス窓のタイトル (取得不可は空) |
 | `EVENTFX_SELECTION` | `text_selected` | 選択された文字列 |
 | `EVENTFX_CURSOR_X` / `EVENTFX_CURSOR_Y` | `text_selected` | 発火時のマウス座標 (Cocoa 系・全スクリーン) |
+
+`text_selected` 時の `EVENTFX_WINDOW_ID` / `EVENTFX_TITLE` は選択が起きた
+焦点窓のもの。「Slack の選択でだけ launcher を出す」「特定窓では抑止する」
+といった窓単位の分岐に使える。
 
 例 — テキスト選択時にマウス近くへ [wand](https://github.com/akira-toriyama/wand) ランチャーを開く:
 

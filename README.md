@@ -100,10 +100,14 @@ eventfx --help         print help, exit
 | `EVENTFX_EVENT` | both | `"window_focused"` or `"text_selected"` |
 | `EVENTFX_PID` | both | app PID |
 | `EVENTFX_APP` | both | app name |
-| `EVENTFX_WINDOW_ID` | `window_focused` | focused window CGWindowID |
-| `EVENTFX_TITLE` | `window_focused` | window title |
+| `EVENTFX_WINDOW_ID` | both | focused window CGWindowID (`0` if unavailable) |
+| `EVENTFX_TITLE` | both | focused window title (empty if unavailable) |
 | `EVENTFX_SELECTION` | `text_selected` | selected text |
 | `EVENTFX_CURSOR_X` / `EVENTFX_CURSOR_Y` | `text_selected` | mouse coords at fire time (Cocoa system, all screens) |
+
+`EVENTFX_WINDOW_ID` / `EVENTFX_TITLE` on `text_selected` reflect the focused
+window where the selection happened — useful for per-window branching
+(e.g. only popup the launcher in Slack, suppress it in a specific window).
 
 Example — popup launcher near cursor on text selection (via [wand](https://github.com/akira-toriyama/wand) / `stroke`):
 

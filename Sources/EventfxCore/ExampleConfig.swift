@@ -13,14 +13,12 @@ public let exampleConfig = """
 #   window_focused  アクティブ（フォーカス）ウィンドウが変わった
 #   text_selected   テキスト選択が変化した（空選択へは発火しない）
 #
-# 共通の環境変数:
+# 共通の環境変数 (両イベント):
 #   $EVENTFX_EVENT      上記いずれか
 #   $EVENTFX_PID        アプリの PID
 #   $EVENTFX_APP        アプリ名
-#
-# window_focused 時のみ:
-#   $EVENTFX_WINDOW_ID  フォーカス窓の CGWindowID
-#   $EVENTFX_TITLE      ウィンドウタイトル
+#   $EVENTFX_WINDOW_ID  フォーカス窓の CGWindowID (取得不可は 0)
+#   $EVENTFX_TITLE      フォーカス窓のタイトル (取得不可は空)
 #
 # text_selected 時のみ:
 #   $EVENTFX_SELECTION  選択された文字列
