@@ -14,12 +14,14 @@ AX 由来のイベント (フォーカス窓変化・テキスト選択変化) �
 
 | イベント | 追加 env | トリガ AX 通知 |
 |---|---|---|
-| `window_focused` | `EVENTFX_WINDOW_ID`, `EVENTFX_TITLE` | `kAXFocusedWindowChanged` / `kAXMainWindowChanged` |
+| `window_focused` | (両イベント共通の `EVENTFX_WINDOW_ID` / `EVENTFX_TITLE` のみ) | `kAXFocusedWindowChanged` / `kAXMainWindowChanged` |
 | `text_selected` | `EVENTFX_SELECTION`, `EVENTFX_CURSOR_X/Y` | `kAXSelectedTextChanged` |
 
-共通 env は `EVENTFX_PID`, `EVENTFX_APP`。`text_selected` の cursor 座標は
-Cocoa 系 (ボトム左原点・全スクリーン)。wand `stroke --show-menu --at`
-契約と直接整合する。
+共通 env は `EVENTFX_PID`, `EVENTFX_APP`, `EVENTFX_WINDOW_ID`,
+`EVENTFX_TITLE`。`text_selected` 時の WINDOW_ID / TITLE は選択が起きた
+焦点窓 (= 通常はその選択を含む窓) のもの。取得不可なら `0` / 空文字に
+fallback。`text_selected` の cursor 座標は Cocoa 系 (ボトム左原点・
+全スクリーン)。wand `stroke --show-menu --at` 契約と直接整合する。
 
 ## Architecture (SwiftPM 3-layer)
 
