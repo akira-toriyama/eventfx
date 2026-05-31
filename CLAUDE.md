@@ -48,7 +48,7 @@ Tests/EventfxCoreTests/    Config.parseCommands / reloadIfChanged の単体 test
 |---|---|
 | `./build.sh` | `swift build -c release` → `bin/eventfx` cp → codesign (持続 / ad-hoc) |
 | `./run.sh` | build + `install.sh` 委譲 (`~/.local/bin/eventfx` 配置 + LaunchAgent 再 bootstrap)。**変更検証のデフォルト** |
-| `./run.sh --foreground` (or `-f`) | build + stop existing + foreground 実行 (`--debug` 付き)。stderr で観察。Ctrl+C 終了 |
+| `./run.sh --foreground` (or `-f`) | build + stop existing + foreground 実行 (`EVENTFX_DEBUG=1` を export)。stderr で観察。Ctrl+C 終了 |
 | `./stop.sh` | brew service + LaunchAgent + stragglers 全停止 |
 | `./install.sh` | build → `~/.local/bin/eventfx` 配置 → plist 生成 → launchd 登録。自己発見パス・ユーザー名非依存 |
 | `./setup-signing-cert.sh` | 持続自己署名 identity 作成 (`eventfx-dev`) → AX 許可が rebuild を跨いで残る |
@@ -102,15 +102,17 @@ macOS の TCC は binary の **codesign identifier** で許可を識別する。
 
 ```
 eventfx                 run as daemon (default)
-eventfx --debug         run + stderr + /tmp/eventfx.log
 eventfx --validate      parse config, print count, exit
 eventfx --doctor        self-check (AX / config / log / daemon), exit
 eventfx --version       print version, exit
 eventfx --help          print help, exit
 ```
 
-`--debug` は production の `~/.local/state/eventfx.log` に加えて stderr と
+verbose ログはフラグでなく **`EVENTFX_DEBUG` 環境変数**でトリガする
+(`--debug` フラグは廃止 — 渡すと unknown flag で exit 2)。`EVENTFX_DEBUG`
+が立っていると production の `~/.local/state/eventfx.log` に加えて stderr と
 `/tmp/eventfx.log` にも tee する (foreground 開発時に `tail -f` しやすい)。
+`run.sh -f` が自動で export、brew / raw 起動は何も立てず静かなまま。
 
 ## Config
 
@@ -157,14 +159,14 @@ KeepAlive が `~/.local/bin/eventfx` から daemon を respawn する点に注�
 | ログ先 | 条件 |
 |---|---|
 | `~/.local/state/eventfx.log` | 常時 (production) |
-| stderr | `--debug` 付き |
-| `/tmp/eventfx.log` | `--debug` 付き (家風 `/tmp/<app>.log`) |
+| stderr | `EVENTFX_DEBUG` 環境変数あり |
+| `/tmp/eventfx.log` | `EVENTFX_DEBUG` 環境変数あり (家風 `/tmp/<app>.log`) |
 | `~/.local/state/eventfx.{out,err}.log` | launchd 経由 |
 
 調査の早道:
 
 - まず `./bin/eventfx --validate` で config が読めるか・件数を確認
-- 動作確認は `./run.sh` (foreground + `--debug`) → イベントが stderr に流れる
+- 動作確認は `./run.sh -f` (foreground + `EVENTFX_DEBUG=1`) → イベントが stderr に流れる。素のバイナリなら `EVENTFX_DEBUG=1 eventfx`
 - 本番デーモンの様子は `tail -f ~/.local/state/eventfx.log`
 - AX 未許可なら起動直後に "accessibility NOT granted yet" ログが出る
 
@@ -200,8 +202,10 @@ eventfx の流儀は以下 3 リポと意図的に揃えている (家風):
 - [perch](https://github.com/akira-toriyama/perch) — keyboard-driven UI navigator
 
 共通: README EN/JA 並行 / `run.sh` `stop.sh` / `scripts/build-icon.sh` /
-SF Symbol アイコン / `--help` `--validate` `--debug` CLI / `/tmp/<app>.log`
-debug ログ / commit-msg hook / 4-workflow CI / Homebrew tap 外出し。
+SF Symbol アイコン / `--help` `--validate` CLI / `<APP>_DEBUG` 環境変数で
+verbose トリガ (facet=`FACET_DEBUG` / chord=`CHORD_DEBUG` / eventfx=
+`EVENTFX_DEBUG`、フラグ廃止) / `/tmp/<app>.log` debug ログ / commit-msg hook /
+4-workflow CI / Homebrew tap 外出し。
 
 連携先:
 - [wand (stroke)](https://github.com/akira-toriyama/wand) — `text_selected`
