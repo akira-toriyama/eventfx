@@ -1,3 +1,10 @@
+---
+title: eventfx 用語集
+tags: [glossary, macos, daemon, ax]
+repo: eventfx
+aliases: []
+---
+
 # 用語集 — eventfx のユビキタス言語
 
 eventfx を構成する各パーツの **正規の呼び名** をまとめた規範ドキュメント。
@@ -100,19 +107,19 @@ flowchart TB
 ## イベント
 
 ### event
-eventfx が発火する **AX 由来の検知単位**。種別は `$EVENTFX_EVENT` で
+[[eventfx]] が発火する **AX 由来の検知単位**。種別は `$EVENTFX_EVENT` で
 分岐する。
 - **Don't call it:** notification, signal, シグナル, 通知
 
 ### `window_focused`
-**フォーカス窓が変わった** ことを示す event。
+**フォーカス窓が変わった** ことを示す [[event]]。
 - トリガ AX 通知: `kAXFocusedWindowChanged` / `kAXMainWindowChanged`
 - env: 共通 env のみ（追加なし）
 - debounce: **50ms**
 - **Don't call it:** focus change, frontmost change, フォーカス変化
 
 ### `text_selected`
-**マウスドラッグでテキストが選択された** ことを示す event。"AX 通知 AND
+**マウスドラッグでテキストが選択された** ことを示す [[event]]。"AX 通知 AND
 ドラッグ完了" の AND 条件で発火（キーボード選択 / IME / プログラム的選択は
 除外）。
 - トリガ AX 通知: `kAXSelectedTextChanged`
@@ -139,7 +146,7 @@ drag 込みで完了した `mouseUp` の **直近性（0.5s 窓）** を AX 通�
 すべての event で共通:
 
 ### `EVENTFX_EVENT`
-event 種別。`window_focused` か `text_selected`。config の `[ ... ]` ガード
+[[event]] 種別。`window_focused` か `text_selected`。config の `[ ... ]` ガード
 で必ず最初に分岐する。
 - **Don't call it:** kind, type, event type, イベント種別
 
@@ -208,7 +215,7 @@ config 不在時に自動生成される **既定テンプレ**。リテラル�
 ## CLI
 
 ### `eventfx`
-**デーモン本体**。argv なしで起動するとそのまま常駐に入る（LaunchAgent
+**デーモン本体**。argv なしで起動するとそのまま常駐に入る（[[LaunchAgent]]
 からの典型呼び出し）。
 - **Don't call it:** daemon binary, server, サービス
 
