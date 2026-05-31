@@ -71,7 +71,6 @@ cd ~/dev/eventfx
 
 ```
 eventfx                run as daemon (default)
-eventfx --debug        run + stderr + /tmp/eventfx.log にもログ出力
 eventfx --validate     config をパース・件数を表示して exit
 eventfx --doctor       セルフチェック (AX / config / log / daemon) して exit
 eventfx --version      バージョン表示して exit
@@ -124,15 +123,15 @@ rm ~/Library/LaunchAgents/com.local.eventfx.plist ~/.local/bin/eventfx
 
 - **何も起きない**: アクセシビリティ未許可の可能性。`~/.local/state/eventfx.log` を確認し、`eventfx` を許可して再起動
 - **Homebrew コマンドが動かない**: launchd 既定 PATH に Homebrew は無い。plist の `EnvironmentVariables/PATH` で解決済 (`install.sh` 生成 / formula の `service do` ブロック)
-- **foreground でデバッグ**: `./run.sh -f` で stderr にイベントが流れる。一番早い確認方法 (デフォルト `./run.sh` は `~/.local/bin` へ deploy)
-- ログ: `~/.local/state/eventfx.log` (本体)、`/tmp/eventfx.log` (`--debug` のみ)、`~/.local/state/eventfx.{out,err}.log` (launchd)
+- **foreground でデバッグ**: `./run.sh -f` で stderr にイベントが流れる。一番早い確認方法 (`EVENTFX_DEBUG=1` を自動で立てる。デフォルト `./run.sh` は `~/.local/bin` へ deploy)。素のバイナリを verbose 実行するなら `EVENTFX_DEBUG=1 eventfx`。通常 / brew 起動は何も立てず静かなまま。(`--debug` フラグは無い — 渡すと exit 2)
+- ログ: `~/.local/state/eventfx.log` (本体)、`/tmp/eventfx.log` (`EVENTFX_DEBUG` のみ)、`~/.local/state/eventfx.{out,err}.log` (launchd)
 
 ## 開発
 
 ```sh
 ./build.sh                 # swift build -c release + codesign + bin/ に配置
 ./run.sh                   # build + install.sh (~/.local/bin + LaunchAgent 再 bootstrap) — デフォルト
-./run.sh --foreground      # build + stop + foreground 実行 (--debug 付き)
+./run.sh --foreground      # build + stop + foreground 実行 (EVENTFX_DEBUG=1)
 ./stop.sh                  # 全 eventfx インスタンスを停止
 ./setup-signing-cert.sh    # 初回のみ: 持続自己署名 identity を作成
 ./scripts/build-icon.sh    # AppIcon.icns を SF Symbol から再生成

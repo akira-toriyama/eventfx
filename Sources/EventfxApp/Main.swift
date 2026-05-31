@@ -12,6 +12,14 @@ enum EventfxApp {
 
     @MainActor
     static func main() {
+        // Debug logging is env-var-triggered, not a CLI flag. run.sh's
+        // foreground path exports EVENTFX_DEBUG=1; a normal/brew/raw
+        // launch sets nothing and stays quiet. (Same build artifact for
+        // dev and prod — inject at launch, never bake into the binary.)
+        if ProcessInfo.processInfo.environment["EVENTFX_DEBUG"] != nil {
+            Logger.shared.debugMode = true
+        }
+
         // CLI argv. Each standalone flag prints + exits before the
         // daemon's AX/AppKit machinery comes up.
         for arg in CommandLine.arguments.dropFirst() {
@@ -20,7 +28,6 @@ enum EventfxApp {
             case "--version", "-V":  print("eventfx \(version)"); exit(0)
             case "--validate":       exit(runValidate())
             case "--doctor":         exit(runDoctor())
-            case "--debug":          Logger.shared.debugMode = true
             default:                 dieUnknownFlag(arg)
             }
         }
@@ -47,7 +54,6 @@ enum EventfxApp {
 
         USAGE
           eventfx                run as daemon (default)
-          eventfx --debug        run + log to stderr and /tmp/eventfx.log
           eventfx --validate     parse config, report count, exit
           eventfx --doctor       self-check (AX / config / daemon / log), exit
           eventfx --version      print version, exit
@@ -56,7 +62,7 @@ enum EventfxApp {
         PATHS
           config:  \(Paths.configPath)
           log:     \(Paths.logPath)
-          debug:   \(Paths.debugLogPath)  (only with --debug)
+          debug:   \(Paths.debugLogPath)  (only with EVENTFX_DEBUG set)
 
         See: https://github.com/akira-toriyama/eventfx
         """)

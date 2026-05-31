@@ -24,8 +24,9 @@ case "${1:-}" in
         ./build.sh
         ./stop.sh
         sleep 0.3
-        echo "launching ./bin/eventfx --debug (Ctrl+C to quit)"
-        exec ./bin/eventfx --debug
+        export EVENTFX_DEBUG=1
+        echo "launching ./bin/eventfx (EVENTFX_DEBUG=1, Ctrl+C to quit)"
+        exec ./bin/eventfx
         ;;
     "")
         # Default: install + bootstrap. After this returns the daemon

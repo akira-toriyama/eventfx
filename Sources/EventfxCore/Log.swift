@@ -4,8 +4,9 @@ import Foundation
 /// - `Paths.logPath` (always, production)
 /// - stderr + `Paths.debugLogPath` (only when `debugMode == true`)
 ///
-/// `debugMode` is set by the App layer from `--debug`. Centralising
-/// the flag here means call sites just say `Logger.shared.log(...)`
+/// `debugMode` is set by the App layer from the `EVENTFX_DEBUG` env
+/// var (run.sh sets it; brew/raw launch stays quiet). Centralising the
+/// flag here means call sites just say `Logger.shared.log(...)`
 /// without threading the option through every layer.
 public final class Logger: @unchecked Sendable {
     // @unchecked Sendable: ロガーは main-thread + AX 経由のシリアル発火が
@@ -25,7 +26,7 @@ public final class Logger: @unchecked Sendable {
             atPath: dir, withIntermediateDirectories: true)
         Logger.append(data, to: Paths.logPath)
 
-        // --debug: surface to stderr (so foreground ./run.sh streams
+        // EVENTFX_DEBUG: surface to stderr (so foreground ./run.sh streams
         // events) and tee to a tmp log that's easy to `tail -f`
         // independently of the production log path.
         if debugMode {
