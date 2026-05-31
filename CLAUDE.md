@@ -3,6 +3,15 @@
 このリポジトリで作業する Claude / エージェント向けの構造・制約・流儀。
 人間の README は [README.md](README.md) / [README.ja.md](README.ja.md)。
 
+## 用語
+
+UI / 設定 / コード上の呼び名は [`docs/glossary.md`](docs/glossary.md) に従う
+— 正規名（`event`, `window_focused`, `text_selected`, `drag-AND fence`,
+`IME suppression`, `EVENTFX_*` env vars, `mtime hot reload`, `LaunchAgent`,
+`eventfx-dev signing identity`, …）のみを使い、`Don't call it:` 側の
+同義語は使わない。用語の追加・改名はコード変更と **同一 PR で** この
+ファイルへ反映する。
+
 ## What this is
 
 AX 由来のイベント (フォーカス窓変化・テキスト選択変化) を検知し、設定された
